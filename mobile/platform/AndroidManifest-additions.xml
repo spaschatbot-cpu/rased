@@ -1,0 +1,28 @@
+<!--
+  انسخ هذه الأسطر إلى android/app/src/main/AndroidManifest.xml
+
+  الأذونات توضع قبل <application>، والباقي داخلها.
+-->
+
+<!-- ═══ قبل <application> ═══ -->
+
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+<!-- التتبّع والشاشة مقفولة -->
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+<!-- يمنع النظام من إنامة المعالج أثناء الوردية -->
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+
+
+<!-- ═══ داخل <application> ═══ -->
+
+<!--
+  أثناء التطوير فقط: أندرويد 9+ يمنع HTTP غير المشفّر، وسيرفر التطوير
+  يعمل على http. احذف السطر التالي عند النشر — Vercel يوفّر HTTPS.
+-->
+<!-- android:usesCleartextTraffic="true" على وسم <application> -->

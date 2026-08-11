@@ -1,0 +1,28 @@
+<!--
+  انسخ هذه المفاتيح إلى ios/Runner/Info.plist داخل <dict> الرئيسي.
+
+  iOS يرفض التطبيق في المراجعة إن طلب الموقع بلا سبب مكتوب بوضوح،
+  فاذكر أنه أثناء الوردية فقط.
+-->
+
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>يُستخدم موقعك لعرض مركبتك على خريطة الإدارة أثناء الوردية.</string>
+
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>يواصل التطبيق إرسال موقع المركبة أثناء الوردية حتى لو كانت الشاشة مقفلة. يتوقف الإرسال فور إنهاء الوردية.</string>
+
+<key>UIBackgroundModes</key>
+<array>
+  <string>location</string>
+</array>
+
+<!--
+  أثناء التطوير فقط، للاتصال بسيرفر http محلي. احذفه عند النشر.
+-->
+<!--
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsLocalNetworking</key>
+  <true/>
+</dict>
+-->

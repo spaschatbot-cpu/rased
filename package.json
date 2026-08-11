@@ -1,0 +1,36 @@
+{
+  "name": "mirsad-fleet",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:phone": "vite --mode phone",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:api": "node scripts/test-api.mjs",
+    "test:users": "node scripts/test-users.mjs",
+    "test:tracking": "node scripts/test-tracking.mjs",
+    "test:fleet": "node scripts/test-fleet.mjs",
+    "test:support": "node scripts/test-support.mjs",
+    "test:access": "node scripts/test-access.mjs",
+    "test:backfill": "node scripts/test-backfill.mjs",
+    "seed:trail": "node scripts/seed-demo-trail.mjs"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.469.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.1.1",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7"
+  }
+}

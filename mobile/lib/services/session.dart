@@ -1,0 +1,52 @@
+import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// جلسة السائق: التوكن وبيانات حسابه.
+///
+/// التوكن في التخزين المشفّر (Keystore / Keychain) لأنه يكفي وحده للتبليغ
+/// باسم هذا السائق طوال أسبوع.
+class Session {
+  Session({required this.token, required this.user});
+
+  final String token;
+  final Map<String, dynamic> user;
+
+  int? get vehicleId => user['vehicleId'] as int?;
+  String get nameAr => (user['nameAr'] as String?) ?? '';
+  String get username => (user['username'] as String?) ?? '';
+
+  Session copyWith({Map<String, dynamic>? user}) =>
+      Session(token: token, user: user ?? this.user);
+}
+
+class SessionStore {
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+  static const _tokenKey = 'mirsad.token';
+  static const _userKey = 'mirsad.user';
+
+  Future<Session?> read() async {
+    final token = await _storage.read(key: _tokenKey);
+    final raw = await _storage.read(key: _userKey);
+    if (token == null || raw == null) return null;
+    try {
+      return Session(token: token, user: jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      // بيانات تالفة من نسخة أقدم — تُعامل كعدم وجود جلسة
+      await clear();
+      return null;
+    }
+  }
+
+  Future<void> write(Session session) async {
+    await _storage.write(key: _tokenKey, value: session.token);
+    await _storage.write(key: _userKey, value: jsonEncode(session.user));
+  }
+
+  Future<void> clear() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _userKey);
+  }
+}

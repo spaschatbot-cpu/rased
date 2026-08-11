@@ -1,0 +1,38 @@
+name: mirsad_driver
+description: تطبيق السائق — يرسل موقع المركبة إلى منصة مرصاد أثناء الوردية.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # الشبكة
+  http: ^1.2.0
+
+  # الموقع — يوفّر Foreground Service على أندرويد بإشعار ثابت،
+  # وهو ما يسمح بالتتبّع والشاشة مقفولة دون حزمة مدفوعة.
+  geolocator: ^13.0.1
+
+  # التوكن سرّي: Keystore على أندرويد و Keychain على iOS
+  flutter_secure_storage: ^9.2.2
+
+  # قائمة انتظار النقاط على القرص — التطبيق قد يُقتل في أي لحظة
+  shared_preferences: ^2.3.2
+
+  # خريطة الوردية. بلاطات OpenStreetMap — بلا مفتاح API وبلا حساب.
+  # ملاحظة: الخريطة تستهلك بيانات، والتتبّع لا يعتمد عليها إطلاقًا — لو
+  # انقطعت الشبكة تبقى رمادية ويستمر الإرسال من القائمة كما هو.
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
