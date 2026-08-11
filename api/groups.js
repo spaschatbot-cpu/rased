@@ -2,7 +2,7 @@
  * Branches and groups.
  *
  *   GET    — any signed-in caller
- *   POST · PUT ?id= · DELETE ?id= — managers and up
+ *   POST · PUT ?id= · DELETE ?id= — admins and up
  *
  * A branch still holding vehicles or accounts cannot be deleted; the operator
  * moves them first, so nothing is reassigned behind their back.

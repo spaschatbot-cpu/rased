@@ -2,15 +2,15 @@
  * The alert inbox.
  *
  *   GET                     — the alerts this caller may see, newest first
- *   POST                    — send one by hand to a vehicle (managers and up)
+ *   POST                    — send one by hand to a vehicle (admins and up)
  *   PATCH ?id=              — mark one read
  *   PATCH                   — mark everything read
  *   DELETE ?id=             — dismiss one
- *   DELETE ?all=1           — clear the inbox (managers and up)
+ *   DELETE ?all=1           — clear the inbox (admins and up)
  *
  * Every other alert here is written by the ingest path from what a vehicle
  * actually did. POST is the one exception and it is deliberately narrow:
- * managers and up only, the sender's name is taken from their account rather
+ * admins and up only, the sender's name is taken from their account rather
  * than the body, and the result is stamped `manual` — so an alert a person
  * sent can always be told apart from one the fleet's own sensors raised.
  */

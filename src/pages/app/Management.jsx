@@ -54,7 +54,7 @@ const MAINT_ICON = {
 /** وحدة القياس حسب أساس الاحتساب */
 const MAINT_UNIT = { odometer: 'mng.maint.km', hours: 'mng.maint.hours', date: 'mng.maint.days' }
 
-const ROLE_TONE = { superadmin: 'violet', admin: 'red', manager: 'brand', viewer: 'sky', driver: 'amber' }
+const ROLE_TONE = { superadmin: 'violet', admin: 'red', viewer: 'sky', driver: 'amber' }
 
 /** ألوان حالات المركبات — مطابقة لنغمات StatusPill */
 const STATUS_KEYS = ['moving', 'idle', 'stopped', 'offline']
@@ -83,7 +83,7 @@ const TAB_ALERT = {
 }
 
 /** الأدوار التي تملك تعديل إعدادات الأسطول — نفس القائمة التي يفرضها السيرفر. */
-const WRITE_ROLES = ['superadmin', 'admin', 'manager']
+const WRITE_ROLES = ['superadmin', 'admin']
 
 export default function Management() {
   const { t, lang, nf, formatDateTime } = useLang()
@@ -399,7 +399,7 @@ export default function Management() {
                       {lang === 'ar' ? 'الصلاحية' : 'Role'}
                     </span>
                     <span className="block truncate text-[12.5px] font-extrabold">
-                      {lang === 'ar' ? 'مدير أسطول' : 'Fleet manager'}
+                      {t(`mng.role.${user?.role ?? 'viewer'}`)}
                     </span>
                   </span>
                 </div>
@@ -635,7 +635,7 @@ export default function Management() {
                 color="#f5b301"
                 label={lang === 'ar' ? 'صلاحيات إدارية' : 'Admin access'}
                 value={nf(adminUsers)}
-                hint={lang === 'ar' ? 'مدير نظام أو أسطول' : 'Admins & managers'}
+                hint={lang === 'ar' ? 'مدير نظام أو منصّة' : 'Admins & super admins'}
               />
             </div>
 
@@ -2218,8 +2218,8 @@ function UserForm({ draft, setDraft, vehicles, groups, error, isNew }) {
             بدونه يظهر الحقل فارغًا وأول لمسة للقائمة تُنزل رتبته */}
         <Select value={draft.role ?? 'viewer'} onChange={(e) => set({ role: e.target.value })}>
           {(draft.role === 'superadmin'
-            ? ['superadmin', 'admin', 'manager', 'viewer', 'driver']
-            : ['admin', 'manager', 'viewer', 'driver']
+            ? ['superadmin', 'admin', 'viewer', 'driver']
+            : ['admin', 'viewer', 'driver']
           ).map((r) => (
             <option key={r} value={r}>{t(`mng.role.${r}`)}</option>
           ))}

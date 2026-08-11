@@ -13,7 +13,7 @@ const clean = (v, max) => String(v ?? '').trim().slice(0, max)
  *   PUT — the account's own name, email, phone and password
  *
  * Editing yourself lives here rather than on `/users` because `/users` is the
- * *management* table: it is gated to managers and up, and it can change a role,
+ * *management* table: it is gated to admins and up, and it can change a role,
  * a branch and a vehicle. A viewer fixing a typo in their own email should not
  * have to pass through a door that wide — and the fields this endpoint refuses
  * to read are exactly the ones nobody should be able to grant themselves.

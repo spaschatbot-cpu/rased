@@ -3,9 +3,9 @@
  *
  *   GET    — any signed-in caller; rows come back decorated with how far
  *            through their period each job is
- *   POST · PUT ?id= — managers and up
+ *   POST · PUT ?id= — admins and up
  *   POST ?id=&action=complete — mark a job done and roll the plan forward
- *   DELETE ?id= — managers and up
+ *   DELETE ?id= — admins and up
  *
  * Written out longhand rather than through `crud()` because two of the verbs
  * do something the generic version does not: GET joins the vehicle registry,

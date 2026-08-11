@@ -9,20 +9,28 @@
  */
 import { readCookie, serializeCookie } from './http.js'
 import { MAX_AGE, readToken } from './crypto.js'
+import { liveRole } from './users.js'
 
 export const COOKIE = 'mirsad_session'
 
 export const sessionCookie = (token) => serializeCookie(COOKIE, token, { maxAge: MAX_AGE })
 export const clearedCookie = () => serializeCookie(COOKIE, '', { maxAge: 0 })
 
-/** The signed-in caller for this request, or null. */
+/**
+ * The signed-in caller for this request, or null.
+ *
+ * The role is translated through `liveRole` on the way out: a token signed
+ * before a role was retired still names it, and a session that outlives the
+ * change must not start failing every write gate until it expires.
+ */
 export function currentUser(req) {
   const header = req.headers?.authorization || req.headers?.Authorization
   if (typeof header === 'string' && header.startsWith('Bearer ')) {
     const claims = readToken(header.slice(7).trim())
-    if (claims) return claims
+    if (claims) return { ...claims, r: liveRole(claims.r) }
   }
-  return readToken(readCookie(req, COOKIE))
+  const claims = readToken(readCookie(req, COOKIE))
+  return claims && { ...claims, r: liveRole(claims.r) }
 }
 
 const deny = (status, message) => {

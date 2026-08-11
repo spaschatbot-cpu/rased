@@ -25,7 +25,6 @@ export const APP_PAGES = ['dashboard', 'map', 'history', 'reports', 'alerts', 'm
 export const ROLE_PAGES = {
   superadmin: APP_PAGES,
   admin: APP_PAGES,
-  manager: ['dashboard', 'map', 'history', 'reports', 'alerts', 'manage'],
   viewer: ['dashboard', 'map', 'reports'],
   driver: ['dashboard', 'map'],
 }

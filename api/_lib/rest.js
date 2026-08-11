@@ -11,7 +11,7 @@ import { requireUser } from './auth.js'
 import { forbidden, idParam } from './collection.js'
 
 /** Roles that may change fleet configuration. Viewers and drivers read only. */
-export const WRITE_ROLES = ['superadmin', 'admin', 'manager']
+export const WRITE_ROLES = ['superadmin', 'admin']
 
 function gate(req, roles) {
   const caller = requireUser(req)
@@ -23,7 +23,7 @@ function gate(req, roles) {
  * @param store  a `collection()`
  * @param name   plural key the list is returned under, e.g. `vehicles`
  * @param single key one written row is returned under, e.g. `vehicle`
- * @param write  roles allowed to create/update/delete (default: managers up)
+ * @param write  roles allowed to create/update/delete (default: admins up)
  * @param read   roles allowed to list (default: any signed-in caller)
  * @param hooks  optional `{ beforeDelete(row, caller), afterWrite(row, caller) }`
  */

@@ -63,7 +63,7 @@ check('password hash never sent', r.data.user?.pass, undefined)
 r = await call('/auth/login', { method: 'POST', body: { username: '7034710512', password: '7034710512' } })
 jar('demo', r.res)
 check('demo login → 200', r.status, 200)
-check('demo role', r.data.user?.role, 'manager')
+check('demo role', r.data.user?.role, 'admin')
 
 /* ── role separation ──────────────────────────────────────────── */
 check('demo PUT /site → 403', (await call('/site', { method: 'PUT', body: {}, as: 'demo' })).status, 403)

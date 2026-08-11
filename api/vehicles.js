@@ -2,7 +2,7 @@
  * The vehicle registry.
  *
  *   GET    — any signed-in caller; the map and every report need the list
- *   POST · PUT ?id= · DELETE ?id= — managers and up
+ *   POST · PUT ?id= · DELETE ?id= — admins and up
  *
  * Deleting a vehicle takes its live fix and its assignment with it, so a driver
  * is never left reporting into a row that no longer exists.

@@ -43,8 +43,8 @@ let r = await signIn('admin', 'superadmin', 'Mirsad@2026')
 check('super-admin signs in', r.status, 200)
 check('hash never leaves the server', r.data.user?.pass, undefined)
 
-r = await signIn('manager', '7034710512', '7034710512')
-check('manager signs in', r.status, 200)
+r = await signIn('ops', '7034710512', '7034710512')
+check('admin signs in', r.status, 200)
 
 r = await signIn('viewer', 'n.salem', 'Mirsad@123')
 check('viewer signs in', r.status, 200)
@@ -52,10 +52,10 @@ check('viewer signs in', r.status, 200)
 /* ── who may see accounts ─────────────────────────────────────── */
 check('anonymous cannot list', (await call('/users')).status, 401)
 check('viewer cannot list', (await call('/users', { as: 'viewer' })).status, 403)
-check('manager can list', (await call('/users', { as: 'manager' })).status, 200)
+check('admin can list', (await call('/users', { as: 'ops' })).status, 200)
 
 r = await call('/users', { as: 'admin' })
-check('admin can list', r.status, 200)
+check('super-admin can list', r.status, 200)
 check('no hashes in the list', r.data.users.every((u) => u.pass === undefined), true)
 
 /* ── validation ───────────────────────────────────────────────── */
@@ -64,6 +64,8 @@ check('username required', (await call('/users', { method: 'POST', as: 'admin', 
 check('password required on create', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 't.one' } })).status, 400)
 check('short password rejected', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 't.one', password: '123' } })).status, 400)
 check('bad role rejected', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 't.one', role: 'root', password: 'Secret123' } })).status, 400)
+/* `manager` was merged into `admin`; the server must no longer accept it */
+check('retired role rejected', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 't.one', role: 'manager', password: 'Secret123' } })).status, 400)
 check('bad email rejected', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 't.one', email: 'nope', password: 'Secret123' } })).status, 400)
 check('duplicate username rejected', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 'a.mutairi', password: 'Secret123' } })).status, 400)
 check('odd characters rejected', (await call('/users', { method: 'POST', as: 'admin', body: { ...base, username: 'bad name!', password: 'Secret123' } })).status, 400)
@@ -88,7 +90,7 @@ r = await call('/auth/me', { bearer: 'newdriver' })
 check('token authenticates', r.data.user?.username, 't.driver')
 
 /* ── the app is drivers only ──────────────────────────────────── */
-check('manager refused by the app', (await signIn('x', '7034710512', '7034710512', 'app')).status, 403)
+check('admin refused by the app', (await signIn('x', '7034710512', '7034710512', 'app')).status, 403)
 check('driver cannot list accounts', (await call('/users', { bearer: 'newdriver' })).status, 403)
 
 /* ── update ───────────────────────────────────────────────────── */
@@ -128,14 +130,14 @@ check('disabled account refused', (await signIn('off', 't.driver', 'Changed123',
 
 /* ── privilege boundaries ─────────────────────────────────────── */
 check(
-  'manager cannot mint a super-admin',
-  (await call('/users', { method: 'POST', as: 'manager', body: { nameAr: 'x', nameEn: 'x', username: 'sneaky', role: 'superadmin', groupId: 1, password: 'Secret123' } })).status,
+  'admin cannot mint a super-admin',
+  (await call('/users', { method: 'POST', as: 'ops', body: { nameAr: 'x', nameEn: 'x', username: 'sneaky', role: 'superadmin', groupId: 1, password: 'Secret123' } })).status,
   403,
 )
 const superAdminRow = (await call('/users', { as: 'admin' })).data.users.find((u) => u.role === 'superadmin')
 check(
-  'manager cannot edit a super-admin',
-  (await call(`/users?id=${superAdminRow.id}`, { method: 'PUT', as: 'manager', body: { nameAr: 'x', nameEn: 'x', username: superAdminRow.username, role: 'superadmin', groupId: 1 } })).status,
+  'admin cannot edit a super-admin',
+  (await call(`/users?id=${superAdminRow.id}`, { method: 'PUT', as: 'ops', body: { nameAr: 'x', nameEn: 'x', username: superAdminRow.username, role: 'superadmin', groupId: 1 } })).status,
   403,
 )
 check('nobody deletes themselves', (await call(`/users?id=${superAdminRow.id}`, { method: 'DELETE', as: 'admin' })).status, 400)

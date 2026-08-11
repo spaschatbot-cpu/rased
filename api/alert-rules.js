@@ -2,7 +2,7 @@
  * Alert rules.
  *
  *   GET    — any signed-in caller
- *   POST · PUT ?id= · DELETE ?id= — managers and up
+ *   POST · PUT ?id= · DELETE ?id= — admins and up
  *
  * Changes take effect on the next fix that arrives: the engine reads the rules
  * per request rather than caching them, so a rule switched off stops firing

@@ -2,7 +2,7 @@
  * Geofences.
  *
  *   GET    — any signed-in caller; the map draws them
- *   POST · PUT ?id= · DELETE ?id= — managers and up
+ *   POST · PUT ?id= · DELETE ?id= — admins and up
  */
 import { crud } from './_lib/rest.js'
 import { geofences } from './_lib/geofences.js'

@@ -2,7 +2,7 @@
  * A driver's working days.
  *
  *   GET            — the caller's own shifts, newest first
- *   GET ?driver=   — one driver's shifts. Managers and up only.
+ *   GET ?driver=   — one driver's shifts. Admins and up only.
  *
  * There is no POST. Shifts are derived from the fixes a phone actually sent, so
  * a driver who could write their own would be filing a timesheet rather than

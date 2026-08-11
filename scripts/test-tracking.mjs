@@ -37,7 +37,7 @@ async function signIn(name, username, password, client) {
   return r
 }
 
-await signIn('manager', '7034710512', '7034710512')
+await signIn('ops', '7034710512', '7034710512')
 await signIn('viewer', 'n.salem', 'Mirsad@123')
 let r = await signIn('d1', 'a.mutairi', 'Driver@123', 'app')
 check('driver 1 signs in', r.status, 200)
@@ -48,7 +48,7 @@ check('the two drivers have different vehicles', v1 !== v2, true)
 
 /* ── who may report ───────────────────────────────────────────── */
 check('anonymous cannot report', (await call('/track', { method: 'POST', body: { lat: 24.7, lng: 46.6 } })).status, 401)
-check('manager cannot report', (await call('/track', { method: 'POST', as: 'manager', body: { lat: 24.7, lng: 46.6 } })).status, 403)
+check('admin cannot report', (await call('/track', { method: 'POST', as: 'ops', body: { lat: 24.7, lng: 46.6 } })).status, 403)
 check('forged token rejected', (await call('/track', { method: 'POST', bearer: 'abc.def', body: { lat: 24.7, lng: 46.6 } })).status, 401)
 
 /* ── a good fix ───────────────────────────────────────────────── */
@@ -71,7 +71,7 @@ check('empty batch', (await call('/track', { method: 'POST', bearer: 'd1', body:
 /* absurd values are clamped, not rejected — a bad sensor should not stop a shift */
 r = await call('/track', { method: 'POST', bearer: 'd1', body: { lat: 24.7, lng: 46.6, speed: 9999, heading: 5000, battery: 500 } })
 check('extreme values accepted', r.status, 200)
-r = await call('/positions', { as: 'manager' })
+r = await call('/positions', { as: 'ops' })
 let mine = r.data.positions.find((p) => p.vehicleId === v1)
 check('speed clamped', mine.speed, 300)
 check('heading clamped', mine.heading, 360)
@@ -92,7 +92,7 @@ r = await call('/track', {
 check('batch accepted', r.status, 200)
 check('all three counted', r.data.accepted, 3)
 
-r = await call('/positions', { as: 'manager' })
+r = await call('/positions', { as: 'ops' })
 mine = r.data.positions.find((p) => p.vehicleId === v1)
 check('newest point wins', mine.lat, 24.72)
 
@@ -111,8 +111,8 @@ await call('/track', { method: 'POST', bearer: 'd2', body: { lat: 24.80, lng: 46
 
 check('anonymous cannot watch', (await call('/positions')).status, 401)
 
-r = await call('/positions', { as: 'manager' })
-check('manager sees both vehicles', r.data.positions.length, 2)
+r = await call('/positions', { as: 'ops' })
+check('admin sees both vehicles', r.data.positions.length, 2)
 
 r = await call('/positions', { as: 'viewer' })
 check('viewer sees both vehicles', r.data.positions.length, 2)
@@ -122,7 +122,7 @@ check('a driver sees only their own', r.data.positions.length, 1)
 check('and it is theirs', r.data.positions[0].vehicleId, v1)
 
 /* ── derived fields ───────────────────────────────────────────── */
-r = await call('/positions', { as: 'manager' })
+r = await call('/positions', { as: 'ops' })
 const parked = r.data.positions.find((p) => p.vehicleId === v2)
 check('zero speed reads as stopped', parked.status, 'stopped')
 check('age is reported', typeof parked.ageSeconds, 'number')
@@ -131,10 +131,10 @@ check('no hash leaks into a position', parked.pass, undefined)
 
 /* ── ending a shift ───────────────────────────────────────────── */
 check('driver ends the shift', (await call('/track', { method: 'DELETE', bearer: 'd2' })).status, 200)
-r = await call('/positions', { as: 'manager' })
+r = await call('/positions', { as: 'ops' })
 check('vehicle left the live map', r.data.positions.some((p) => p.vehicleId === v2), false)
 check('the other is still there', r.data.positions.some((p) => p.vehicleId === v1), true)
-check('manager cannot end a shift', (await call('/track', { method: 'DELETE', as: 'manager' })).status, 403)
+check('admin cannot end a shift', (await call('/track', { method: 'DELETE', as: 'ops' })).status, 403)
 
 /* ── a driver with no vehicle cannot report ───────────────────── */
 await signIn('admin', 'superadmin', 'Mirsad@2026')
@@ -150,11 +150,11 @@ await call(`/users?id=${orphanId}`, { method: 'DELETE', as: 'admin' })
 
 /* ── method guard ─────────────────────────────────────────────── */
 check('GET /track not allowed', (await call('/track', { bearer: 'd1' })).status, 405)
-check('POST /positions not allowed', (await call('/positions', { method: 'POST', as: 'manager' })).status, 405)
+check('POST /positions not allowed', (await call('/positions', { method: 'POST', as: 'ops' })).status, 405)
 
 /* ── cleanup ──────────────────────────────────────────────────── */
 await call('/track', { method: 'DELETE', bearer: 'd1' })
-r = await call('/positions', { as: 'manager' })
+r = await call('/positions', { as: 'ops' })
 check('live map is empty again', r.data.positions.length, 0)
 
 console.log(`\n${pass} passed, ${fail} failed`)

@@ -10,10 +10,23 @@ import { hashPassword } from './crypto.js'
 
 const KEY = 'users'
 
-export const ROLES = ['superadmin', 'admin', 'manager', 'viewer', 'driver']
+export const ROLES = ['superadmin', 'admin', 'viewer', 'driver']
 
 /** Roles allowed to open the Management screen and edit accounts. */
-export const canManageUsers = (role) => ['superadmin', 'admin', 'manager'].includes(role)
+export const canManageUsers = (role) => ['superadmin', 'admin'].includes(role)
+
+/**
+ * Roles that were dropped, and what they became.
+ *
+ * `manager` carried exactly the grants `admin` did — same pages, same write
+ * gate, same account access — so the two were one role wearing two labels.
+ * Keeping the map means a store written before the merge still signs in:
+ * an unknown role resolves to no pages at all, which would lock out every
+ * account that held it.
+ */
+const RETIRED_ROLES = { manager: 'admin' }
+
+export const liveRole = (role) => RETIRED_ROLES[role] ?? role
 
 /**
  * Seeded on first run so the platform is usable out of the box. Mirrors the
@@ -21,10 +34,10 @@ export const canManageUsers = (role) => ['superadmin', 'admin', 'manager'].inclu
  */
 const SEED = [
   { nameAr: 'مدير النظام', nameEn: 'Super admin', username: 'superadmin', email: 'admin@mirsad.sa', role: 'superadmin', groupId: 1, pass: 'Mirsad@2026' },
-  { nameAr: 'شركة لامار', nameEn: 'Lamar Company', username: '7034710512', email: 'ops@lamar.sa', role: 'manager', groupId: 1, pass: '7034710512' },
+  { nameAr: 'شركة لامار', nameEn: 'Lamar Company', username: '7034710512', email: 'ops@lamar.sa', role: 'admin', groupId: 1, pass: '7034710512' },
   { nameAr: 'خالد العتيبي', nameEn: 'Khalid Al-Otaibi', username: 'k.otaibi', email: 'k.otaibi@lamar.sa', role: 'admin', groupId: 1, pass: 'Mirsad@123' },
-  { nameAr: 'سعود الدوسري', nameEn: 'Saud Al-Dosari', username: 's.dosari', email: 's.dosari@lamar.sa', role: 'manager', groupId: 2, pass: 'Mirsad@123' },
-  { nameAr: 'ماجد الحربي', nameEn: 'Majed Al-Harbi', username: 'm.harbi', email: 'm.harbi@lamar.sa', role: 'manager', groupId: 3, pass: 'Mirsad@123' },
+  { nameAr: 'سعود الدوسري', nameEn: 'Saud Al-Dosari', username: 's.dosari', email: 's.dosari@lamar.sa', role: 'admin', groupId: 2, pass: 'Mirsad@123' },
+  { nameAr: 'ماجد الحربي', nameEn: 'Majed Al-Harbi', username: 'm.harbi', email: 'm.harbi@lamar.sa', role: 'admin', groupId: 3, pass: 'Mirsad@123' },
   { nameAr: 'نورة السالم', nameEn: 'Noura Al-Salem', username: 'n.salem', email: 'n.salem@lamar.sa', role: 'viewer', groupId: 1, pass: 'Mirsad@123' },
   { nameAr: 'أحمد المطيري', nameEn: 'Ahmed Al-Mutairi', username: 'a.mutairi', email: 'a.mutairi@lamar.sa', role: 'driver', groupId: 1, vehicleId: 1, pass: 'Driver@123' },
   { nameAr: 'فهد القحطاني', nameEn: 'Fahad Al-Qahtani', username: 'f.qahtani', email: 'f.qahtani@lamar.sa', role: 'driver', groupId: 1, vehicleId: 2, pass: 'Driver@123' },
@@ -62,7 +75,14 @@ function seed() {
 export async function allUsers() {
   const stored = await get(KEY)
 
-  if (Array.isArray(stored)) return stored
+  if (Array.isArray(stored)) {
+    /* rewrite retired roles once, so the store stops carrying them and every
+       later read is a plain pass-through again */
+    if (!stored.some((u) => RETIRED_ROLES[u.role])) return stored
+    const moved = stored.map((u) => ({ ...u, role: liveRole(u.role) }))
+    await set(KEY, moved)
+    return moved
+  }
 
   if (stored && typeof stored === 'object') {
     const migrated = Object.values(stored).map((u, i) => ({
@@ -71,7 +91,7 @@ export async function allUsers() {
       nameEn: u.nameEn ?? u.username,
       username: u.username,
       email: u.email ?? '',
-      role: u.role ?? 'viewer',
+      role: liveRole(u.role ?? 'viewer'),
       groupId: u.groupId ?? 1,
       vehicleId: u.vehicleId ?? null,
       active: u.active ?? true,

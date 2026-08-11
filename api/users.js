@@ -1,7 +1,7 @@
 /**
  * Accounts, as managed from the dashboard's Management screen.
  *
- *   GET    — list (managers and up)
+ *   GET    — list (admins and up)
  *   POST   — create
  *   PUT    ?id= — update; `password` is optional and only set when present
  *   DELETE ?id= — remove
@@ -19,7 +19,7 @@ const MIN_PASSWORD = 6
 const clean = (v, max) => String(v ?? '').trim().slice(0, max)
 const idFrom = (req) => Number(new URL(req.url, 'http://localhost').searchParams.get('id'))
 
-/** Managers and up may edit accounts; nobody may mint a super-admin but one. */
+/** Admins and up may edit accounts; nobody may mint a super-admin but one. */
 function gate(req) {
   const caller = requireUser(req)
   if (!canManageUsers(caller.r)) {
