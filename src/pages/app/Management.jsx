@@ -54,7 +54,7 @@ const MAINT_ICON = {
 /** وحدة القياس حسب أساس الاحتساب */
 const MAINT_UNIT = { odometer: 'mng.maint.km', hours: 'mng.maint.hours', date: 'mng.maint.days' }
 
-const ROLE_TONE = { admin: 'red', manager: 'brand', viewer: 'sky', driver: 'amber' }
+const ROLE_TONE = { superadmin: 'violet', admin: 'red', manager: 'brand', viewer: 'sky', driver: 'amber' }
 
 /** ألوان حالات المركبات — مطابقة لنغمات StatusPill */
 const STATUS_KEYS = ['moving', 'idle', 'stopped', 'offline']
@@ -255,7 +255,7 @@ export default function Management() {
   // ملخّص المستخدمين المعروض فوق الجدول
   const activeUsers = users.filter((u) => u.active).length
   const activePct = users.length ? Math.round((activeUsers / users.length) * 100) : 0
-  const adminUsers = users.filter((u) => u.role === 'admin' || u.role === 'manager').length
+  const adminUsers = users.filter((u) => WRITE_ROLES.includes(u.role)).length
 
   // سجلات الصيانة مرتبطة بالمركبات ومرتّبة حسب الأقرب استحقاقًا
   const vehicleById = useMemo(() => new Map(vehicles.map((v) => [v.id, v])), [vehicles])
@@ -2214,8 +2214,13 @@ function UserForm({ draft, setDraft, vehicles, groups, error, isNew }) {
       </Field>
 
       <Field label={t('mng.role')}>
+        {/* «مدير المنصّة» لا يُمنح من هنا، لكنه يبقى معروضًا لمن يحمله بالفعل —
+            بدونه يظهر الحقل فارغًا وأول لمسة للقائمة تُنزل رتبته */}
         <Select value={draft.role ?? 'viewer'} onChange={(e) => set({ role: e.target.value })}>
-          {['admin', 'manager', 'viewer', 'driver'].map((r) => (
+          {(draft.role === 'superadmin'
+            ? ['superadmin', 'admin', 'manager', 'viewer', 'driver']
+            : ['admin', 'manager', 'viewer', 'driver']
+          ).map((r) => (
             <option key={r} value={r}>{t(`mng.role.${r}`)}</option>
           ))}
         </Select>
