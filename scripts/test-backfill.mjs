@@ -10,10 +10,12 @@
  * already landed. This drives that exact sequence and checks the trail keeps
  * the journey in the order it was driven, not the order it was delivered.
  *
- * It writes into driver 1's trail for today, so point it at a development
- * store. The points it adds are minutes apart and its own.
+ * It writes into driver 1's trail, so point it at a development store. The
+ * points it adds are minutes apart and its own. It normally uses today; in the
+ * first hour after midnight there is not enough of today to hold the window and
+ * it falls back to yesterday, which changes nothing it is testing.
  */
-import { dayOf, startOfDay } from '../shared/clock.js'
+import { dayBack, dayOf, startOfDay } from '../shared/clock.js'
 
 const ORIGIN = process.env.API_BASE || 'http://localhost:5174'
 const BASE = `${ORIGIN}/api`
@@ -57,44 +59,61 @@ token = r.data.token
 check('driver signs in', r.status, 200)
 
 const ZONE = { lat: 24.7136, lng: 46.6753 }
-/* the same Saudi day the server files a fix under */
-const today = dayOf()
 
 /* The minutes this run writes into, and the half-minute it uses to prove a
    genuine gap is still kept. */
 const MINUTES = [0, 1, 2, 3, 4, 5, 8, 9]
 const HALF = 3.5
 
+const CLEAR_MS = 30000
+const SPAN_MIN = Math.max(...MINUTES, HALF)
+/* how far behind the end of the day the newest fix is kept — a fix must never
+   be stamped in the future, and the tracker distrusts clocks that run ahead */
+const LEAD_MIN = 40
+
 /**
- * Find a stretch of today with nothing already in it.
+ * Find a stretch with nothing already in it, and the day it belongs to.
  *
  * The day's trail is shared with every other suite — and with earlier runs of
  * this one. A fixed window would test whatever those left behind, so the window
  * is chosen against the trail as it actually is: far enough from every stored
  * point that the minimum-gap rule cannot confuse this run's fixes with anyone
  * else's.
+ *
+ * Today is tried first, because a phone flushing a backlog right now is the
+ * scenario being reproduced. But shortly after midnight there is not yet enough
+ * of today to hold the window, and the suite used to fail there — a red result
+ * that meant "it is 00:26", not "the code is wrong". Yesterday is always a full
+ * twenty-four hours, and it is well inside the seven-day buffer the tracker
+ * accepts device timestamps from, so those fixes are taken and filed under that
+ * day exactly as an overnight backlog would be.
  */
 async function findFreeWindow() {
-  const { data } = await call(`/history?vehicle=1&date=${today}`)
-  const taken = (data.points ?? []).map((p) => Date.parse(p.at))
-  const CLEAR_MS = 30000
+  for (const day of [dayOf(), dayBack(1)]) {
+    const { data } = await call(`/history?vehicle=1&date=${day}`)
+    const taken = (data.points ?? []).map((p) => Date.parse(p.at))
 
-  /* the whole of today is fair game, in small steps: the trail fills up as the
-     other suites run, and a narrow search runs out of room by the afternoon */
-  const midnight = startOfDay(today)
-  for (let back = 40; back < 1400; back += 7) {
-    const base = Date.now() - back * 60000
-    if (base < midnight) break // a base before midnight lands in another day key
-    const wanted = [...MINUTES, HALF].map((m) => base + m * 60000)
-    const clashes = wanted.some((w) => taken.some((t) => Math.abs(t - w) < CLEAR_MS))
-    if (!clashes) return base
+    const dayStart = startOfDay(day)
+    /* a past day is complete; today ends at the current instant */
+    const dayEnd = Math.min(Date.now(), dayStart + 86400000)
+
+    /* walk backwards in small steps: the trail fills up as the other suites
+       run, and a narrow search runs out of room by the afternoon */
+    for (let base = dayEnd - (LEAD_MIN + SPAN_MIN) * 60000; base >= dayStart; base -= 7 * 60000) {
+      const wanted = [...MINUTES, HALF].map((m) => base + m * 60000)
+      const clashes = wanted.some((w) => taken.some((t) => Math.abs(t - w) < CLEAR_MS))
+      if (!clashes) return { day, base }
+    }
   }
   return null
 }
 
-const base = await findFreeWindow()
-ok('found a clear stretch of the day to drive through', base !== null)
-if (base === null) process.exit(1)
+const window = await findFreeWindow()
+ok('found a clear stretch to drive through', window !== null)
+if (window === null) process.exit(1)
+
+const { day, base } = window
+if (day !== dayOf()) console.log(`      (today is too young to hold the window — using ${day})`)
 
 const point = (minute, speed) => ({
   lat: Number((ZONE.lat + minute * 0.004).toFixed(6)),
@@ -119,7 +138,7 @@ check('the backlog is accepted', r.data.accepted, backlog.length)
 check('and every point is recorded', r.data.recorded, backlog.length)
 
 /* ── the day's trail ──────────────────────────────────────────── */
-r = await call(`/history?vehicle=1&date=${today}`)
+r = await call(`/history?vehicle=1&date=${day}`)
 check('the day reads back', r.status, 200)
 
 const points = r.data.points ?? []
