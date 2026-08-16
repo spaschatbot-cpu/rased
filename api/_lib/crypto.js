@@ -38,7 +38,26 @@ export function verifyPassword(password, stored) {
 /* ── session tokens ──────────────────────────────────────────────── */
 
 const b64 = (buf) => Buffer.from(buf).toString('base64url')
-const sign = (payload) => createHmac('sha256', SECRET).update(payload).digest('base64url')
+
+/**
+ * Refuse before node:crypto does.
+ *
+ * `readToken` already checked for a missing secret and returned null, but
+ * `issueToken` went straight to createHmac and let it throw ERR_INVALID_ARG_TYPE
+ * on a null key. That surfaced as a 500 with a stack trace through internal
+ * crypto modules — a shape that reads as a bug in the sign-in code, when the
+ * cause is one unset environment variable and nothing else. Worse, it only
+ * happened *after* the password matched, so a misconfigured deployment failed
+ * exactly where a working one would have succeeded.
+ */
+function sign(payload) {
+  if (!SECRET) {
+    const err = new Error('sessions are unavailable: SESSION_SECRET is not configured')
+    err.statusCode = 503
+    throw err
+  }
+  return createHmac('sha256', SECRET).update(payload).digest('base64url')
+}
 
 /**
  * @param audience 'web' for the dashboard cookie, 'app' for the driver app.
