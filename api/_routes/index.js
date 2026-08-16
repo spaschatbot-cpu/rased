@@ -5,7 +5,13 @@
  * handlers this backend has were twenty functions — past the twelve a Hobby
  * deployment is allowed, which made the free plan unavailable to a project
  * whose code was already small enough for it. Underscored paths are not routed,
- * so the handlers live here and one catch-all function dispatches to them.
+ * so the handlers live here and two thin entry points dispatch to them:
+ * `api/[route].js` and `api/auth/[route].js`.
+ *
+ * Two rather than one because a single `api/[...path].js` does not catch a
+ * nested path: deployed, it served `/api/site` and left `/api/auth/login` to
+ * Vercel's own 404. One dynamic segment per directory is what matches. Both
+ * entry points share this dispatch, so there is still only one route table.
  *
  * Nothing about a handler changed: they are the same plain `(req, res)` modules
  * reachable at the same URLs, and each still parses `req.url` itself rather
