@@ -93,6 +93,12 @@ check('token authenticates', r.data.user?.username, 't.driver')
 check('admin refused by the app', (await signIn('x', '7034710512', '7034710512', 'app')).status, 403)
 check('driver cannot list accounts', (await call('/users', { bearer: 'newdriver' })).status, 403)
 
+/* ── and the dashboard is not for drivers ─────────────────────── */
+r = await signIn('webdriver', 't.driver', 'Secret123')
+check('driver refused by the dashboard', r.status, 403)
+check('and told which app to use', r.data.code, 'driver_app_only')
+check('with no session handed out', r.res.headers.get('set-cookie'), null)
+
 /* ── update ───────────────────────────────────────────────────── */
 r = await call(`/users?id=${driverId}`, {
   method: 'PUT',

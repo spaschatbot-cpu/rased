@@ -37,7 +37,11 @@ export function AuthProvider({ children }) {
       setUser(me)
       return { ok: true, role: me.role }
     } catch (err) {
-      return { ok: false, error: err.status === 0 ? 'network' : 'credentials' }
+      if (err.status === 0) return { ok: false, error: 'network' }
+      /* a real account on the wrong door — saying so beats "wrong password",
+         which would send a driver hunting for a typo that is not there */
+      if (err.code === 'driver_app_only') return { ok: false, error: 'driverApp' }
+      return { ok: false, error: 'credentials' }
     }
   }, [])
 

@@ -5,7 +5,7 @@
  *   npm run test:access
  *   API_BASE=http://localhost:5181 npm run test:access
  *
- * It edits a viewer's grants and a manager's profile, and puts both back.
+ * It edits a viewer's grants and an admin's profile, and puts both back.
  */
 import { APP_PAGES, ROLE_PAGES, pagesFor } from '../shared/app-pages.js'
 

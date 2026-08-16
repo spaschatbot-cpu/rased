@@ -130,6 +130,27 @@ export const findById = async (id) => (await allUsers()).find((u) => u.id === Nu
 /** Strip the hash before anything is sent to a browser or the app. */
 export const publicUser = ({ pass, ...rest }) => rest
 
+/**
+ * The account, plus the vehicle it is assigned to.
+ *
+ * The dashboard holds the whole registry and can look an id up in it. The
+ * driver app holds one account and nothing else, so `vehicleId: 4` is all it
+ * can show — and a number names nothing to the person driving the van. The
+ * plate travels with the account instead, on the two endpoints the app reads.
+ */
+export async function userWithVehicle(user) {
+  const profile = publicUser(user)
+  if (!user.vehicleId) return profile
+
+  /* imported lazily: the vehicle registry is not needed to answer a question
+     about an account that drives nothing, which is most of them */
+  const { vehicles } = await import('./vehicles.js')
+  const v = await vehicles.find(user.vehicleId)
+  if (!v) return profile
+
+  return { ...profile, vehicle: { id: v.id, plate: v.plate, modelAr: v.modelAr, modelEn: v.modelEn } }
+}
+
 /** Note a successful sign-in. Best-effort: never block the login on it. */
 export async function touchLogin(id) {
   try {

@@ -61,7 +61,15 @@ export default handler({
 
   async PUT(req, res) {
     gate(req)
-    const record = await maintenance.update(idParam(req), await readJson(req))
+
+    const body = await readJson(req)
+    /* the counting basis can change on an edit, and a start reading in the old
+       unit means nothing in the new one — the screen sends it back empty, and
+       the plan re-bases on the vehicle's reading today, as a new one would */
+    if (body.start == null) {
+      body.start = readingFor(body, await vehicles.find(body.vehicleId))
+    }
+    const record = await maintenance.update(idParam(req), body)
     return ok(res, { ok: true, record: decorate(record, await vehicles.find(record.vehicleId)) })
   },
 

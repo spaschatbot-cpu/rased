@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../i18n.dart';
+
 /// جلسة السائق: التوكن وبيانات حسابه.
 ///
 /// التوكن في التخزين المشفّر (Keystore / Keychain) لأنه يكفي وحده للتبليغ
@@ -15,6 +17,24 @@ class Session {
   int? get vehicleId => user['vehicleId'] as int?;
   String get nameAr => (user['nameAr'] as String?) ?? '';
   String get username => (user['username'] as String?) ?? '';
+
+  Map<String, dynamic>? get _vehicle => user['vehicle'] as Map<String, dynamic>?;
+
+  /// لوحة المركبة المرتبطة — ما يقرأه السائق على الباب ويعرف به مركبته.
+  ///
+  /// يعود `null` إن لم يرسل السيرفر المركبة: جلسة محفوظة من نسخة أقدم من
+  /// التطبيق تبقى صالحة، وتعود لعرض الرقم حتى أول تحديث للحساب.
+  String? get vehiclePlate {
+    final plate = _vehicle?['plate'] as String?;
+    return (plate != null && plate.trim().isNotEmpty) ? plate.trim() : null;
+  }
+
+  /// موديل المركبة بلغة الواجهة، إن وُجد.
+  String? get vehicleModel {
+    final key = AppLocale.isArabic ? 'modelAr' : 'modelEn';
+    final model = _vehicle?[key] as String?;
+    return (model != null && model.trim().isNotEmpty) ? model.trim() : null;
+  }
 
   Session copyWith({Map<String, dynamic>? user}) =>
       Session(token: token, user: user ?? this.user);

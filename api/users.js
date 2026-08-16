@@ -12,7 +12,7 @@ import { handler, readJson, ok, fail } from './_lib/http.js'
 import { requireUser } from './_lib/auth.js'
 import { hashPassword } from './_lib/crypto.js'
 import { ROLES, allUsers, canManageUsers, publicUser, saveUsers } from './_lib/users.js'
-import { cleanPages } from '../shared/app-pages.js'
+import { cleanPages, pagesFor } from '../shared/app-pages.js'
 
 const MIN_PASSWORD = 6
 
@@ -125,12 +125,28 @@ export default handler({
     const problem = validate(body, list, list[i])
     if (problem) return fail(res, 400, problem)
 
-    /* nobody may promote themselves, or touch a super-admin, from below */
-    if (caller.r !== 'superadmin' && (list[i].role === 'superadmin' || body.role === 'superadmin')) {
+    /* حساب مدير المنصّة لا يُعدَّل من جدول المستخدمين — ولا حتى من مدير منصّة
+       آخر. هو الحساب الذي تُستعاد به المنصّة حين يُقفل كل ما سواه، فتغيير دوره
+       أو كلمة مروره أو تعطيله من شاشة إدارية يترك النظام بلا باب أخير. صاحبه
+       وحده يعدّله من ملفه الشخصي على /auth/me */
+    if (list[i].role === 'superadmin') {
+      return fail(res, 403, 'a super-admin account is edited from its own profile only')
+    }
+    /* ولا يُرقّى أحد إلى مدير منصّة إلا بيد مدير منصّة */
+    if (body.role === 'superadmin' && caller.r !== 'superadmin') {
       return fail(res, 403, 'only a super-admin can manage a super-admin')
     }
 
     const updated = { ...shape(body, list[i]), id: list[i].id, updatedAt: new Date().toISOString() }
+
+    /* the screen that hands out grants is itself one of them. An operator who
+       drops their own is locked out of the only place that could give it back,
+       and has to be rescued by somebody else — so the refusal is here rather
+       than in the confirmation dialog of a single screen */
+    if (id === caller.i && !pagesFor(updated).includes('manage')) {
+      return fail(res, 403, 'you cannot revoke your own management access')
+    }
+
     list[i] = updated
     await saveUsers(list)
     return ok(res, { ok: true, user: publicUser(updated) })
@@ -145,8 +161,9 @@ export default handler({
     const list = await allUsers()
     const target = list.find((u) => u.id === id)
     if (!target) return fail(res, 404, 'user not found')
-    if (target.role === 'superadmin' && caller.r !== 'superadmin') {
-      return fail(res, 403, 'only a super-admin can delete a super-admin')
+    /* وحذفه ممنوع مطلقًا: لا يُترك النظام بلا حساب استعادة */
+    if (target.role === 'superadmin') {
+      return fail(res, 403, 'a super-admin account cannot be deleted')
     }
 
     await saveUsers(list.filter((u) => u.id !== id))

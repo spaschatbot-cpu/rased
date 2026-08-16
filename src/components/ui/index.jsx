@@ -289,7 +289,14 @@ export function Segmented({ options, value, onChange, className, size = 'md' }) 
 }
 
 /* ── Modal ───────────────────────────────────────────────────────── */
-export function Modal({ open, onClose, title, children, footer, size = 'md', offsetY = 0 }) {
+/**
+ * `error` sits in its own band between the header and the scrolling body
+ * rather than inside it. A form taller than the modal starts scrolled, and a
+ * message placed at the top of that scroll box is simply not on screen when
+ * the save button that produced it is at the bottom — the refusal reads as
+ * the button doing nothing at all.
+ */
+export function Modal({ open, onClose, title, children, footer, error, size = 'md', offsetY = 0 }) {
   const { t } = useLang()
   useEffect(() => {
     if (!open) return undefined
@@ -327,6 +334,14 @@ export function Modal({ open, onClose, title, children, footer, size = 'md', off
             <X size={17} />
           </button>
         </div>
+        {error && (
+          <p
+            role="alert"
+            className="border-b border-[#f4634e]/25 bg-[#f4634e]/12 px-4 py-3 text-[12.5px] font-bold text-[#e04b34] sm:px-5 dark:text-[#f4634e]"
+          >
+            {error}
+          </p>
+        )}
         <div className="max-h-[65vh] overflow-y-auto p-4 sm:p-5">{children}</div>
         {footer && <div className="flex items-center justify-end gap-2 border-t p-4">{footer}</div>}
       </div>
@@ -356,7 +371,7 @@ export function Table({ columns, rows, renderRow, empty, onRowClick, activeId, c
                 style={fit && c.width ? { width: c.width } : undefined}
                 className={cn(
                   'align-middle text-[13px] font-black uppercase tracking-[0.06em] text-[var(--s-text)]',
-                  fit ? 'whitespace-normal break-words px-3 py-4 leading-tight' : 'whitespace-nowrap px-5 py-4',
+                  fit ? 'whitespace-normal break-words px-3 py-3 leading-tight' : 'whitespace-nowrap px-5 py-3',
                   // نفس محاذاة الخلايا: بداية السطر ما لم يحدد العمود محاذاة أخرى
                   /\btext-(start|end|center|left|right)\b/.test(c.className ?? '') ? '' : 'text-start',
                   c.className,
@@ -403,7 +418,7 @@ export function Td({ className, children, ...rest }) {
   return (
     <td
       className={cn(
-        'whitespace-nowrap px-5 py-4 align-middle',
+        'whitespace-nowrap px-5 py-2.5 align-middle',
         /\btext-(start|end|center|left|right)\b/.test(className ?? '') ? '' : 'text-start',
         className,
       )}

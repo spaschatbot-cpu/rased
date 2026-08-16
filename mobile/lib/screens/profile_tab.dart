@@ -37,6 +37,16 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final vehicle = session.vehicleId;
 
+    /* اللوحة تُعرَّف المركبة والموديل يصفها — هنا متّسع للاثنين، بخلاف
+       الشارة الصغيرة في الرئيسية. والرقم يبقى بديلًا لجلسة قديمة */
+    final plate = session.vehiclePlate;
+    final model = session.vehicleModel;
+    final vehicleLabel = vehicle == null
+        ? tr('app.noVehicle')
+        : plate == null
+            ? tr1('app.vehicle', vehicle)
+            : (model == null ? plate : '$plate · $model');
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
       children: [
@@ -88,7 +98,7 @@ class ProfileTab extends StatelessWidget {
           _Row(
             icon: Icons.local_shipping_outlined,
             label: tr('profile.vehicle'),
-            value: vehicle == null ? tr('app.noVehicle') : tr1('app.vehicle', vehicle),
+            value: vehicleLabel,
             tone: vehicle == null ? Brand.danger : null,
           ),
         ]),

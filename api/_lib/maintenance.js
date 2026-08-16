@@ -13,7 +13,13 @@
 import { collection, num, text } from './collection.js'
 
 export const KINDS = ['odometer', 'hours', 'date']
-export const TYPES = ['oil', 'tires', 'brakes', 'inspection', 'battery', 'filter']
+/**
+ * The jobs the screen knows an icon and a name for, plus `other` — a job the
+ * operator named themselves. `other` carries a `label`; the rest take their
+ * name from the reader's language, so the same record reads in Arabic and in
+ * English without anything being stored twice.
+ */
+export const TYPES = ['oil', 'tires', 'brakes', 'inspection', 'battery', 'filter', 'other']
 
 const SEED = [
   { vehicleId: 1, type: 'oil', kind: 'odometer', period: 10000, used: 1.09, cost: 420, vendorAr: 'ورشة الرياض المركزية', vendorEn: 'Riyadh Central Workshop' },
@@ -48,6 +54,7 @@ function seed() {
       id: i + 1,
       vehicleId: m.vehicleId,
       type: m.type,
+      label: '',
       kind: m.kind,
       period: m.period,
       start: Math.round(current - m.period * m.used),
@@ -62,6 +69,9 @@ function seed() {
 
 function validate(body, list, existing) {
   if (!TYPES.includes(text(body.type, 20))) return `type must be one of ${TYPES.join(', ')}`
+  /* a job filed under `other` has nothing else to be called — an unnamed one
+     would show up in the schedule as a row nobody can identify */
+  if (text(body.type, 20) === 'other' && !text(body.label, 80)) return 'a maintenance name is required'
   if (!KINDS.includes(text(body.kind, 20))) return `kind must be one of ${KINDS.join(', ')}`
   if (num(body.vehicleId, 1, 1e9) == null) return 'a vehicle is required'
   if (num(body.period, 1, 1e6) == null) return 'period must be a positive number'
@@ -73,6 +83,9 @@ const shape = (body, existing) => ({
   ...existing,
   vehicleId: num(body.vehicleId, 1, 1e9),
   type: text(body.type, 20),
+  /* only a named job keeps a label — picking a known type back drops it, so a
+     stale name cannot outlive the type it was typed against */
+  label: text(body.type, 20) === 'other' ? text(body.label, 80) : '',
   kind: text(body.kind, 20),
   period: num(body.period, 1, 1e6),
   /* a new record with no explicit start begins at the current reading, which

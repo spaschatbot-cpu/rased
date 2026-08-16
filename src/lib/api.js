@@ -8,10 +8,12 @@
  */
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  /** `code` is set only where the caller must branch on *which* refusal it is. */
+  constructor(message, status, code = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -31,7 +33,9 @@ async function request(path, { method = 'GET', body, signal } = {}) {
   }
 
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError(data.error || `request failed (${res.status})`, res.status)
+  if (!res.ok) {
+    throw new ApiError(data.error || `request failed (${res.status})`, res.status, data.code ?? null)
+  }
   return data
 }
 

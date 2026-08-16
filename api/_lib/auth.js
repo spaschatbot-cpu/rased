@@ -23,14 +23,27 @@ export const clearedCookie = () => serializeCookie(COOKIE, '', { maxAge: 0 })
  * before a role was retired still names it, and a session that outlives the
  * change must not start failing every write gate until it expires.
  */
+/**
+ * A driver's session is only real with the app audience.
+ *
+ * Drivers report from the phone and the dashboard has nothing for them to
+ * open, so a `web` token naming one can only be a cookie issued before that
+ * rule existed. Retiring it here rather than at the sign-in door means an
+ * open tab does not keep working past the change.
+ */
+const scoped = (claims) => {
+  if (!claims) return null
+  if (claims.r === 'driver' && claims.a !== 'app') return null
+  return { ...claims, r: liveRole(claims.r) }
+}
+
 export function currentUser(req) {
   const header = req.headers?.authorization || req.headers?.Authorization
   if (typeof header === 'string' && header.startsWith('Bearer ')) {
-    const claims = readToken(header.slice(7).trim())
-    if (claims) return { ...claims, r: liveRole(claims.r) }
+    const claims = scoped(readToken(header.slice(7).trim()))
+    if (claims) return claims
   }
-  const claims = readToken(readCookie(req, COOKIE))
-  return claims && { ...claims, r: liveRole(claims.r) }
+  return scoped(readToken(readCookie(req, COOKIE)))
 }
 
 const deny = (status, message) => {

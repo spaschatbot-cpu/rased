@@ -1,7 +1,7 @@
 import { handler, readJson, ok, fail } from '../_lib/http.js'
 import { currentUser, requireUser } from '../_lib/auth.js'
 import { hashPassword, verifyPassword } from '../_lib/crypto.js'
-import { allUsers, findById, publicUser, saveUsers } from '../_lib/users.js'
+import { allUsers, findById, publicUser, saveUsers, userWithVehicle } from '../_lib/users.js'
 
 const MIN_PASSWORD = 6
 const clean = (v, max) => String(v ?? '').trim().slice(0, max)
@@ -28,7 +28,9 @@ export default handler({
     const account = await findById(claims.i)
     if (!account || !account.active) return ok(res, { ok: true, user: null })
 
-    return ok(res, { ok: true, user: publicUser(account) })
+    /* this is the call the driver app makes on every launch, and the one that
+       picks up a vehicle the office reassigned while the app was closed */
+    return ok(res, { ok: true, user: await userWithVehicle(account) })
   },
 
   async PUT(req, res) {

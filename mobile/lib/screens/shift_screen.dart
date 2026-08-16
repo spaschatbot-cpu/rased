@@ -56,6 +56,7 @@ class _ShiftScreenState extends State<ShiftScreen> with SingleTickerProviderStat
                             _Identity(
                               name: session.nameAr,
                               vehicleId: session.vehicleId,
+                              vehiclePlate: session.vehiclePlate,
                               compact: compact,
                             ),
                             SizedBox(height: compact ? 20 : 30),
@@ -97,10 +98,18 @@ class _ShiftScreenState extends State<ShiftScreen> with SingleTickerProviderStat
    ══════════════════════════════════════════════════════════════════ */
 
 class _Identity extends StatelessWidget {
-  const _Identity({required this.name, required this.vehicleId, required this.compact});
+  const _Identity({
+    required this.name,
+    required this.vehicleId,
+    required this.vehiclePlate,
+    required this.compact,
+  });
 
   final String name;
   final int? vehicleId;
+
+  /// اللوحة إن أرسلها السيرفر — تُفضَّل على الرقم، فهي ما يميّز المركبة للسائق.
+  final String? vehiclePlate;
   final bool compact;
 
   /// أول حرف من أول كلمتين — يكفي للتعرّف دون صورة يرفعها أحد.
@@ -171,7 +180,10 @@ class _Identity extends StatelessWidget {
                           size: 13, color: none ? Brand.danger : Brand.green),
                       const SizedBox(width: 6),
                       Text(
-                        none ? tr('app.noVehicle') : tr1('app.vehicle', vehicleId!),
+                        none
+                            ? tr('app.noVehicle')
+                            : (vehiclePlate ?? tr1('app.vehicle', vehicleId!)),
+                        textDirection: vehiclePlate == null ? null : TextDirection.ltr,
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,

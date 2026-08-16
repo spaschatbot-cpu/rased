@@ -16,6 +16,7 @@ import {
 } from '../../components/ui'
 import { PageHeader } from '../../layouts/AppLayout'
 import { api } from '../../lib/api'
+import { apiErrorText } from '../../lib/apiErrors'
 import { APP_PAGES as PAGE_KEYS, ROLE_PAGES, pagesFor } from '../../../shared/app-pages'
 
 const TABS = [
@@ -44,13 +45,34 @@ const PAGE_META = {
 }
 const APP_PAGES = PAGE_KEYS.map((key) => ({ key, ...PAGE_META[key] }))
 
+/**
+ * الأقسام التي يملأ جدولها ما تبقّى من الشاشة.
+ *
+ * عمود المحتوى في هذه الأقسام بارتفاع النافذة تمامًا، وبطاقة الجدول تأخذ ما
+ * يفضل بعد العنوان وبطاقات الملخّص مهما كان ارتفاعها. التمرير يقع داخل الجدول
+ * ورؤوس أعمدته تثبت في أعلاه، فلا يغيب عنوان القسم ولا شريط البحث عن الشاشة —
+ * ولا يبقى فراغ تحت الجدول لأن الارتفاع محسوب لا مُقدَّر.
+ *
+ * على الشاشات الضيّقة تُترك الصفحة تتمرّر كما هي: تقييد الارتفاع هناك يترك
+ * للصفوف نافذة أضيق من أن تُقرأ.
+ */
+const FULL_HEIGHT_TABS = new Set(['users', 'devices', 'groups', 'maint', 'perms'])
+/** بطاقة الجدول: تبتلع ما تبقّى من عمود المحتوى */
+const TABLE_CARD = 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col'
+/** الجدول نفسه: يتمرّر داخل بطاقته */
+const TABLE_SCROLL = 'lg:min-h-0 lg:flex-1 lg:overflow-y-auto'
+
 /** حالات الصيانة — اللون والنغمة */
 const MAINT_TONE = { overdue: 'red', soon: 'amber', planned: 'brand' }
 const MAINT_COLOR = { overdue: '#f4634e', soon: '#f5b301', planned: '#00a97a' }
-const MAINT_TYPES = ['oil', 'tires', 'brakes', 'inspection', 'battery', 'filter']
+const MAINT_TYPES = ['oil', 'tires', 'brakes', 'inspection', 'battery', 'filter', 'other']
 const MAINT_ICON = {
   oil: Droplets, tires: CircleDot, brakes: Disc3, inspection: ClipboardCheck, battery: BatteryCharging, filter: Filter,
 }
+/** الأنواع المعروفة وحدها تُقترح في القائمة — «أخرى» اسم يكتبه المستخدم */
+const MAINT_PRESETS = MAINT_TYPES.filter((k) => k !== 'other')
+/** اسم سجل الصيانة: ما كتبه المستخدم، وإلا اسم النوع بلغة القارئ */
+const maintName = (m, t) => m.label || t(`mng.maint.type.${m.type}`)
 /** وحدة القياس حسب أساس الاحتساب */
 const MAINT_UNIT = { odometer: 'mng.maint.km', hours: 'mng.maint.hours', date: 'mng.maint.days' }
 
@@ -65,13 +87,16 @@ const STATUS_COLOR = {
   offline: '#8898ac',
 }
 
+/** من يفتح لوحة التحكّم. السائق يسجّل من تطبيقه وحده، فلا صفحات تُمنح له. */
+const opensDashboard = (u) => u.role !== 'driver'
+
 /** العدّاد المعروض بجانب كل قسم في الشريط الجانبي */
 const TAB_COUNT = {
   users: ({ users }) => users.length,
   devices: ({ vehicles }) => vehicles.length,
   groups: ({ groups }) => groups.length,
   maint: ({ maintenance }) => maintenance.length,
-  perms: ({ users }) => users.length,
+  perms: ({ users }) => users.filter(opensDashboard).length,
   /* غير المقروء أولًا: العدد الذي يستدعي فتح القسم هو ما ينتظر ردًّا، لا
      مجموع المحادثات التي أُغلقت منذ أسابيع */
   support: ({ support }) => support.unread || support.threads.length,
@@ -148,7 +173,7 @@ export default function Management() {
       await write(modal.row?.id, draft)
       setModal(null)
     } catch (err) {
-      setFormError(err.message)
+      setFormError(apiErrorText(err.message, t))
     } finally {
       setSaving(false)
     }
@@ -160,7 +185,7 @@ export default function Management() {
     try {
       await run()
     } catch (err) {
-      window.alert(err.message)
+      window.alert(apiErrorText(err.message, t))
     }
   }
 
@@ -218,7 +243,7 @@ export default function Management() {
           return rest
         })
       } catch (err) {
-        setPermError(err.message)
+        setPermError(apiErrorText(err.message, t))
         setPermDraft((prev) => {
           const { [u.id]: _failed, ...rest } = prev
           return rest
@@ -246,8 +271,25 @@ export default function Management() {
   const filteredUsers = users.filter(
     (u) => !q || u.nameEn.toLowerCase().includes(q) || u.nameAr.includes(query) || u.username.includes(q),
   )
+  /* تبويب الصلاحيات يوزّع صفحات لوحة التحكّم، والسائق لا يفتحها أصلًا — صفّه
+     هناك مربّعات لا تَمنح شيئًا ولا تَسحب شيئًا */
+  const dashboardUsers = users.filter(opensDashboard)
+  const filteredDashboardUsers = filteredUsers.filter(opensDashboard)
+
   const filteredVehicles = vehicles.filter(
     (v) => !q || v.plate.toLowerCase().includes(q) || v.imei.includes(q) || v.modelEn.toLowerCase().includes(q),
+  )
+
+  /* شريط البحث ظاهر فوق كل جدول، فجدول الفروع يستجيب له كما يستجيب الباقي */
+  const filteredGroups = groups.filter(
+    (g) =>
+      !q ||
+      g.nameEn.toLowerCase().includes(q) ||
+      g.nameAr.includes(query) ||
+      g.cityEn.toLowerCase().includes(q) ||
+      g.cityAr.includes(query) ||
+      g.managerEn.toLowerCase().includes(q) ||
+      g.managerAr.includes(query),
   )
 
   const expiringSoon = vehicles.filter((v) => new Date(v.simExpiry) - Date.now() < 90 * 864e5).length
@@ -276,18 +318,18 @@ export default function Management() {
       m.vendorEn.toLowerCase().includes(q) ||
       m.vendorAr.includes(query) ||
       String(m.id).includes(q) ||
-      t(`mng.maint.type.${m.type}`).toLowerCase().includes(q)
+      maintName(m, t).toLowerCase().includes(q)
     )
   })
   const maintOverdue = maintRows.filter((m) => m.state === 'overdue').length
   const maintSoon = maintRows.filter((m) => m.state === 'soon').length
   const maintCost = maintRows.reduce((sum, m) => sum + m.cost, 0)
 
-  // ملخّص الصلاحيات
-  const fullAccessUsers = users.filter((u) => permsOf(u).length === APP_PAGES.length).length
-  const noAccessUsers = users.filter((u) => permsOf(u).length === 0).length
-  const avgPages = users.length
-    ? Math.round((users.reduce((s, u) => s + permsOf(u).length, 0) / users.length) * 10) / 10
+  // ملخّص الصلاحيات — يعدّ من يفتح اللوحة فقط، كما يفعل الجدول تحته
+  const fullAccessUsers = dashboardUsers.filter((u) => permsOf(u).length === APP_PAGES.length).length
+  const noAccessUsers = dashboardUsers.filter((u) => permsOf(u).length === 0).length
+  const avgPages = dashboardUsers.length
+    ? Math.round((dashboardUsers.reduce((s, u) => s + permsOf(u).length, 0) / dashboardUsers.length) * 10) / 10
     : 0
 
   const addLabel = {
@@ -306,7 +348,9 @@ export default function Management() {
         <div className="flex flex-col items-stretch gap-6 lg:flex-row">
           {/* ── الشريط الجانبي ─────────────────────────────────── */}
           <aside className="shrink-0 lg:w-72 lg:self-start">
-            <Card className="flex flex-col overflow-hidden border-[var(--s-border-strong)] shadow-[var(--s-e2)] lg:sticky lg:top-3 lg:h-[calc(100vh-2rem)]">
+            {/* ارتفاع واحد مع عمود المحتوى كي ينتهيا عند خطّ واحد. تجاوز الشاشة
+                يعني أن أسفله لا يُرى إلا بتمرير الصفحة، فلا التصاق هنا */}
+            <Card className="flex flex-col overflow-hidden border-[var(--s-border-strong)] shadow-[var(--s-e2)] lg:h-[calc(100vh+2rem)]">
               {/* رأس الشريط */}
               <div className="flex items-center gap-3 border-b border-[var(--s-border)] bg-gradient-to-b from-[var(--s-panel-2)] to-transparent px-4 py-4">
                 <IconPlate icon={Settings2} size="lg" />
@@ -408,10 +452,16 @@ export default function Management() {
           </aside>
 
           {/* ── المحتوى ────────────────────────────────────────── */}
-          <div className="min-w-0 flex-1 space-y-6">
+          {/* أطول من الشاشة بقدر معلوم: الصفحة تتمرّر قليلًا ليُرى أسفل العمودين */}
+          <div
+            className={cn(
+              'min-w-0 flex-1 space-y-6',
+              FULL_HEIGHT_TABS.has(tab) && 'lg:flex lg:h-[calc(100vh+2rem)] lg:flex-col',
+            )}
+          >
         {/* عنوان القسم + شريط الأدوات — داخل عمود المحتوى حتى لا يزيح الشريط الجانبي */}
         {tab !== 'overview' && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-[20px] font-extrabold tracking-tight sm:text-[22px]">{t(sectionLabel)}</h2>
               <p className="mt-1 text-[12.5px] font-semibold text-muted">
@@ -444,15 +494,18 @@ export default function Management() {
                   </Select>
                 </>
               )}
-              <div className="w-44 sm:w-60">
-                <Input
-                  icon={Search}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t('common.search')}
-                  className="h-10 text-[13px]"
-                />
-              </div>
+              {/* الملف الشخصي حساب واحد لا جدول — بحثٌ فيه لا يصفّي شيئًا */}
+              {tab !== 'profile' && (
+                <div className="w-44 sm:w-60">
+                  <Input
+                    icon={Search}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t('common.search')}
+                    className="h-10 text-[13px]"
+                  />
+                </div>
+              )}
               {modalKey && canWrite && (
                 <Button size="sm" onClick={() => openModal(modalKey, null)}>
                   <Plus size={15} />
@@ -615,7 +668,7 @@ export default function Management() {
         {tab === 'users' && (
           <>
             {/* بطاقات ملخّص المستخدمين */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="shrink-0 grid gap-4 sm:grid-cols-3">
               <MetricCard
                 icon={Users2}
                 color="#00a97a"
@@ -639,10 +692,11 @@ export default function Management() {
               />
             </div>
 
-            <Card className="overflow-hidden">
+            <Card className={cn("overflow-hidden", TABLE_CARD)}>
             <CardHeader title={t('mng.users')} subtitle={`${nf(filteredUsers.length)} ${t('rep.rows')}`} icon={Users2} />
             <Table
               fit
+              className={TABLE_SCROLL}
               columns={[
                 { key: 'n', label: t('common.name'), width: '20%' },
                 { key: 'u', label: t('login.user'), width: '16%' },
@@ -677,7 +731,14 @@ export default function Management() {
                   </Td>
                   <Td className="text-end">
                     {canWrite && (
-                      <RowActions onEdit={() => openModal('user', u)} onDelete={() => removeUser(u)} />
+                      /* حساب مدير المنصّة لا يُعدَّل ولا يُحذف من هنا — صاحبه
+                         وحده يعدّله من «الملف الشخصي»، والسيرفر يرفضها كذلك */
+                      <RowActions
+                        onEdit={() => openModal('user', u)}
+                        onDelete={() => removeUser(u)}
+                        locked={u.role === 'superadmin'}
+                        lockTitle={t('mng.users.superadminLocked')}
+                      />
                     )}
                   </Td>
                 </>
@@ -688,10 +749,11 @@ export default function Management() {
         )}
 
         {tab === 'devices' && (
-          <Card className="overflow-hidden">
+          <Card className={cn("overflow-hidden", TABLE_CARD)}>
             <CardHeader title={t('mng.devices')} subtitle={`${nf(filteredVehicles.length)} ${t('rep.rows')}`} icon={Truck} />
             <Table
               fit
+              className={TABLE_SCROLL}
               columns={[
                 { key: 'p', label: t('mng.plate'), width: '11%' },
                 { key: 'm', label: t('mng.model'), width: '13%' },
@@ -741,10 +803,11 @@ export default function Management() {
         )}
 
         {tab === 'groups' && (
-          <Card className="overflow-hidden">
-            <CardHeader title={t('mng.groups')} subtitle={`${nf(groups.length)} ${t('rep.rows')}`} icon={FolderTree} />
+          <Card className={cn("overflow-hidden", TABLE_CARD)}>
+            <CardHeader title={t('mng.groups')} subtitle={`${nf(filteredGroups.length)} ${t('rep.rows')}`} icon={FolderTree} />
             <Table
               fit
+              className={TABLE_SCROLL}
               columns={[
                 { key: 'n', label: t('common.name'), width: '24%' },
                 { key: 'c', label: t('mng.city'), width: '15%' },
@@ -753,7 +816,7 @@ export default function Management() {
                 { key: 'u', label: t('mng.usersCount'), width: '15%' },
                 { key: 'a', label: t('common.actions'), width: '10%', className: 'text-end' },
               ]}
-              rows={groups}
+              rows={filteredGroups}
               empty={t('common.noData')}
               renderRow={(g) => (
                 <>
@@ -776,7 +839,7 @@ export default function Management() {
         {tab === 'maint' && (
           <>
             {/* ملخّص الصيانة */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="shrink-0 grid gap-4 sm:grid-cols-3">
               <MetricCard
                 icon={AlertTriangle}
                 color={MAINT_COLOR.overdue}
@@ -789,7 +852,9 @@ export default function Management() {
                 color={MAINT_COLOR.soon}
                 label={t('mng.maint.soon')}
                 value={nf(maintSoon)}
-                hint={lang === 'ar' ? 'خلال ١٤ يومًا' : 'within 14 days'}
+                /* العتبة نسبة من الفترة لا عدد أيام — الفترة قد تكون كيلومترات
+                   أو ساعات تشغيل، ووعد «خلال ١٤ يومًا» لا يصحّ فيهما */
+                hint={lang === 'ar' ? 'بقي أقل من ١٥٪ من الفترة' : 'under 15% of the period left'}
               />
               <MetricCard
                 icon={Wrench}
@@ -800,7 +865,7 @@ export default function Management() {
               />
             </div>
 
-            <Card className="overflow-hidden">
+            <Card className={cn("overflow-hidden", TABLE_CARD)}>
               <CardHeader
                 title={t('mng.maint')}
                 subtitle={`${nf(filteredMaint.length)} ${t('rep.rows')}`}
@@ -808,6 +873,7 @@ export default function Management() {
               />
               <Table
                 fit
+                className={TABLE_SCROLL}
                 columns={[
                   { key: 'n', label: t('mng.maint.name'), width: '21%' },
                   { key: 'd', label: t('mng.maint.device'), width: '12%' },
@@ -836,7 +902,7 @@ export default function Management() {
                             <TypeIcon size={17} strokeWidth={2.3} />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate font-extrabold">{t(`mng.maint.type.${m.type}`)}</span>
+                            <span className="block truncate font-extrabold">{maintName(m, t)}</span>
                             <span className="block truncate text-[11px] font-semibold text-muted">
                               #{m.id} · {t(`mng.maint.kind.${m.kind}`)}
                             </span>
@@ -895,7 +961,7 @@ export default function Management() {
                               icon={Check}
                               title={t('mng.maint.complete')}
                               tone="brand"
-                              onClick={() => completeMaintenance(m.id).catch((err) => window.alert(err.message))}
+                              onClick={() => completeMaintenance(m.id).catch((err) => window.alert(apiErrorText(err.message, t)))}
                             />
                           )}
                           {/* التفاصيل قراءة — تبقى لمن يقرأ الجدول ولا يكتبه */}
@@ -932,13 +998,13 @@ export default function Management() {
         {tab === 'perms' && (
           <>
             {/* ملخّص الصلاحيات */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="shrink-0 grid gap-4 sm:grid-cols-3">
               <MetricCard
                 icon={ShieldCheck}
                 color="#00a97a"
                 label={t('mng.perms.fullAccess')}
                 value={nf(fullAccessUsers)}
-                hint={`${lang === 'ar' ? 'من' : 'of'} ${nf(users.length)}`}
+                hint={`${lang === 'ar' ? 'من' : 'of'} ${nf(dashboardUsers.length)}`}
               />
               <MetricCard
                 icon={KeyRound}
@@ -956,7 +1022,7 @@ export default function Management() {
               />
             </div>
 
-            <Card className="overflow-hidden">
+            <Card className={cn("overflow-hidden", TABLE_CARD)}>
               <CardHeader
                 title={t('mng.perms')}
                 subtitle={t('mng.perms.desc')}
@@ -977,18 +1043,22 @@ export default function Management() {
 
               <Table
                 fit
+                className={TABLE_SCROLL}
                 columns={[
                   { key: 'u', label: t('mng.perms.employee'), width: '22%' },
                   ...APP_PAGES.map((p) => ({ key: p.key, label: t(p.label), width: '11%', className: 'text-center' })),
                   { key: 'a', label: t('common.actions'), width: '12%', className: 'text-end' },
                 ]}
-                rows={filteredUsers}
+                rows={filteredDashboardUsers}
                 empty={t('common.noData')}
                 renderRow={(u) => {
                   const list = permsOf(u)
                   /* مدير النظام هو من يوزّع الصلاحيات — حجب «الإدارة» عنه يترك
                      المنصّة بلا أحد يستطيع إعادتها، فصفوفه للعرض لا للتعديل */
                   const locked = u.role === 'superadmin'
+                  /* سحب «الإدارة» عن نفسك يغلق الشاشة التي تُعاد منها وحدها،
+                     فلا يبقى إلا أن ينقذك زميل. السيرفر يرفضها كذلك */
+                  const isSelf = u.id === user?.id
                   const busy = permBusy === u.id
                   return (
                     <>
@@ -998,7 +1068,7 @@ export default function Management() {
                         </span>
                         <span className="block truncate text-[11px] font-semibold text-muted">
                           {t(`mng.role.${u.role}`)} · {nf(list.length)}/{nf(APP_PAGES.length)}
-                          {locked && ` · ${t('mng.perms.locked')}`}
+                          {locked ? ` · ${t('mng.perms.locked')}` : isSelf ? ` · ${t('mng.perms.self')}` : ''}
                         </span>
                       </Td>
 
@@ -1008,7 +1078,7 @@ export default function Management() {
                             icon={p.icon}
                             on={list.includes(p.key)}
                             label={t(p.label)}
-                            disabled={locked || busy || !canWrite}
+                            disabled={locked || busy || !canWrite || (isSelf && p.key === 'manage')}
                             onClick={() => togglePerm(u, p.key)}
                           />
                         </Td>
@@ -1032,7 +1102,7 @@ export default function Management() {
                             icon={X}
                             title={t('mng.perms.clearAll')}
                             tone="red"
-                            disabled={locked || busy || !canWrite}
+                            disabled={locked || busy || !canWrite || isSelf}
                             onClick={() => setAllPerms(u, 'none')}
                           />
                         </span>
@@ -1058,6 +1128,7 @@ export default function Management() {
         key={modal ? `${modal.type}-${modal.row?.id ?? 'new'}` : 'closed'}
         open={Boolean(modal)}
         onClose={() => setModal(null)}
+        error={formError}
         offsetY={40}
         title={
           modal?.row
@@ -1078,19 +1149,12 @@ export default function Management() {
           </>
         }
       >
-        {formError && (
-          <p className="mb-4 rounded-lg bg-[#f4634e]/12 px-3 py-2 text-[12.5px] font-bold text-[#e04b34] dark:text-[#f4634e]">
-            {formError}
-          </p>
-        )}
-
         {modal?.type === 'user' && (
           <UserForm
             draft={draft}
             setDraft={setDraft}
             vehicles={vehicles}
             groups={groups}
-            error={null}
             isNew={!modal.row}
           />
         )}
@@ -1117,7 +1181,7 @@ export default function Management() {
             <Button
               className="!bg-none !bg-[#f4634e] !text-white hover:!bg-[#e04b34] !shadow-[#f4634e]/25"
               onClick={() => {
-                removeMaintenance(maintDelete.id).catch((err) => window.alert(err.message))
+                removeMaintenance(maintDelete.id).catch((err) => window.alert(apiErrorText(err.message, t)))
                 setMaintDelete(null)
               }}
             >
@@ -1135,7 +1199,7 @@ export default function Management() {
             <div className="min-w-0">
               <p className="text-[14px] font-extrabold">{t('mng.maint.deleteConfirm')}</p>
               <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-                {t(`mng.maint.type.${maintDelete.type}`)} — {maintDelete.vehicle.plate} (#{maintDelete.id})
+                {maintName(maintDelete, t)} — {maintDelete.vehicle.plate} (#{maintDelete.id})
               </p>
               <p className="mt-1 text-[12px] font-semibold text-muted">{t('mng.maint.deleteHint')}</p>
             </div>
@@ -1168,7 +1232,7 @@ export default function Management() {
               </span>
               <div className="min-w-0">
                 <p className="truncate text-[14px] font-extrabold leading-tight">
-                  {t(`mng.maint.type.${maintDetails.type}`)}
+                  {maintName(maintDetails, t)}
                 </p>
                 <p className="truncate text-[11.5px] font-semibold text-muted">
                   {maintDetails.vehicle.plate} · {t(`mng.maint.kind.${maintDetails.kind}`)}
@@ -1396,6 +1460,18 @@ function MaintForm({ draft, setDraft, vehicles, isNew }) {
   const unit = t(MAINT_UNIT[kind])
   const field = 'h-10 text-[13px]'
 
+  /* نوع معروف يُعرض باسمه المترجم، فالسجل نفسه يُقرأ بالعربية وبالإنجليزية دون
+     أن يُخزَّن اسمه مرتين. أما ما يكتبه المستخدم فيُحفَظ كما كتبه */
+  const nameValue =
+    draft.type === 'other' ? (draft.label ?? '')
+    : draft.type ? t(`mng.maint.type.${draft.type}`)
+    : ''
+  const setName = (value) => {
+    const typed = value.trim()
+    const preset = MAINT_PRESETS.find((k) => t(`mng.maint.type.${k}`) === typed)
+    set(preset ? { type: preset, label: '' } : { type: 'other', label: value })
+  }
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label={t('mng.maint.device')}>
@@ -1411,12 +1487,21 @@ function MaintForm({ draft, setDraft, vehicles, isNew }) {
           ))}
         </Select>
       </Field>
-      <Field label={t('mng.maint.name')}>
-        <Select className={field} value={draft.type ?? 'oil'} onChange={(e) => set({ type: e.target.value })}>
-          {MAINT_TYPES.map((k) => (
-            <option key={k} value={k}>{t(`mng.maint.type.${k}`)}</option>
+      {/* الاسم — قائمة وكتابة معًا: الأنواع المعروفة تُقترح، وأي اسم آخر
+          يُحفظ كما هو تحت النوع «صيانة أخرى» */}
+      <Field label={t('mng.maint.name')} hint={t('mng.maint.nameHint')}>
+        <Input
+          className={field}
+          list="maint-name-presets"
+          autoComplete="off"
+          value={nameValue}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <datalist id="maint-name-presets">
+          {MAINT_PRESETS.map((k) => (
+            <option key={k} value={t(`mng.maint.type.${k}`)} />
           ))}
-        </Select>
+        </datalist>
       </Field>
       <Field label={t('mng.maint.type')}>
         <Select
@@ -1558,7 +1643,7 @@ function SupportSection({ inbox, query }) {
     if (openId == null) return undefined
     const ctrl = new AbortController()
     const tick = () => openThread(openId, ctrl.signal).catch((err) => {
-      if (err.name !== 'AbortError') setError(err.message)
+      if (err.name !== 'AbortError') setError(apiErrorText(err.message, t))
     })
     setError(null)
     tick()
@@ -1569,11 +1654,15 @@ function SupportSection({ inbox, query }) {
     }
   }, [openId, openThread])
 
-  /* آخر رسالة هي المقصودة دائمًا — القائمة تُفتح على أسفلها لا على أعلاها */
+  /* آخر رسالة هي المقصودة دائمًا — القائمة تُفتح على أسفلها لا على أعلاها.
+     والتحديث الدوري يعيد بناء المحادثة كل ربع دقيقة، فلو نزلنا مع كل ردّ من
+     السيرفر لانتُزع من يقرأ رسالة قديمة إلى الأسفل وهو يقرؤها. النزول يتبع
+     وصول رسالة جديدة أو فتح محادثة أخرى، لا مجرد وصول الردّ */
+  const lastMessageId = thread?.messages?.[thread.messages.length - 1]?.id ?? null
   useEffect(() => {
     const box = scroller.current
     if (box) box.scrollTop = box.scrollHeight
-  }, [thread])
+  }, [openId, lastMessageId])
 
   const send = async () => {
     const text = draft.trim()
@@ -1586,7 +1675,7 @@ function SupportSection({ inbox, query }) {
       setDraft('')
       reload()
     } catch (err) {
-      setError(err.message)
+      setError(apiErrorText(err.message, t))
     } finally {
       setSending(false)
     }
@@ -1628,9 +1717,12 @@ function SupportSection({ inbox, query }) {
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      {/* على الشاشات الواسعة يأخذ اللوحان ارتفاع النافذة، فالتمرير يقع داخل
+          المحادثة وداخل القائمة — لا بالصفحة كلها. من يقرأ رسالة يبقى شريط
+          الردّ ورأس المحادثة أمامه بدل أن يختفيا فوق حافة الشاشة */}
+      <div className="grid gap-6 lg:h-[calc(100vh-19rem)] lg:min-h-[440px] lg:grid-cols-[320px_1fr]">
         {/* قائمة المحادثات */}
-        <Card className="overflow-hidden">
+        <Card className="flex min-h-0 flex-col overflow-hidden">
           <CardHeader title={t('mng.support.threads')} icon={MessagesSquare} dense />
           {rows.length === 0 ? (
             <div className="px-5 py-10 text-center">
@@ -1641,7 +1733,7 @@ function SupportSection({ inbox, query }) {
               </p>
             </div>
           ) : (
-            <div className="max-h-[560px] divide-y divide-[var(--s-border)] overflow-y-auto">
+            <div className="min-h-0 max-h-[560px] flex-1 divide-y divide-[var(--s-border)] overflow-y-auto lg:max-h-none">
               {rows.map((th) => {
                 const on = th.driverId === openId
                 return (
@@ -1677,7 +1769,7 @@ function SupportSection({ inbox, query }) {
         </Card>
 
         {/* المحادثة المفتوحة */}
-        <Card className="flex min-h-[520px] flex-col overflow-hidden">
+        <Card className="flex min-h-[520px] flex-col overflow-hidden lg:min-h-0">
           {openId == null ? (
             <div className="grid flex-1 place-items-center px-6 py-12 text-center">
               <div>
@@ -1706,7 +1798,7 @@ function SupportSection({ inbox, query }) {
                 dense
               />
 
-              <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto p-5">
+              <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
                 {(thread?.messages ?? []).length === 0 && (
                   <p className="py-10 text-center text-[12.5px] font-semibold text-muted">
                     {t('mng.support.noMessages')}
@@ -1780,7 +1872,7 @@ function SupportSection({ inbox, query }) {
 function ProfileSection({ groups }) {
   const { t, lang, setLang, nf, formatDateTime } = useLang()
   const { theme, setTheme } = useTheme()
-  const { user, pages: myPages, saveProfile } = useAuth()
+  const { user, saveProfile } = useAuth()
   const [notify, setNotify] = useState(true)
 
   /* حقول الهوية مضبوطة من الحساب، وتُعاد إليه كلّما تغيّر — حفظ ناجح لزميل
@@ -1829,7 +1921,7 @@ function ProfileSection({ groups }) {
       await saveProfile(draft)
       setSaved(true)
     } catch (err) {
-      setError(err.message)
+      setError(apiErrorText(err.message, t))
     } finally {
       setSaving(false)
     }
@@ -1845,7 +1937,7 @@ function ProfileSection({ groups }) {
       setPass(blankPass)
       setPassState({ busy: false, done: true, error: null })
     } catch (err) {
-      setPassState({ busy: false, done: false, error: err.message })
+      setPassState({ busy: false, done: false, error: apiErrorText(err.message, t) })
     }
   }
 
@@ -2046,31 +2138,6 @@ function ProfileSection({ groups }) {
               </PrefRow>
             </div>
           </Card>
-
-          {/* الصفحات المتاحة — ما منحته الإدارة لهذا الحساب فعلًا، لا ما يفترضه
-              دوره: بعد أن صارت الصلاحيات محفوظة صار للسؤال جواب واحد */}
-          <Card className="overflow-hidden">
-            <CardHeader title={t('mng.profile.pagesAllowed')} icon={KeyRound} dense />
-            <div className="flex flex-wrap gap-2 p-5">
-              {APP_PAGES.map((p) => {
-                const on = myPages.includes(p.key)
-                return (
-                  <span
-                    key={p.key}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[12px] font-extrabold ring-1 ring-inset',
-                      on
-                        ? 'bg-brand-500/12 text-brand-600 ring-brand-500/25 dark:text-brand-300'
-                        : 'bg-[var(--s-panel-2)] text-muted opacity-60 ring-[var(--s-border)]',
-                    )}
-                  >
-                    <p.icon size={13} strokeWidth={2.4} />
-                    {t(p.label)}
-                  </span>
-                )
-              })}
-            </div>
-          </Card>
         </div>
       </div>
     </>
@@ -2173,7 +2240,7 @@ function IconButton({ icon: Icon, title, onClick, tone = 'muted', disabled = fal
  * it. A driver saved here can sign into the mobile app immediately, which is
  * why the password and vehicle fields live on this screen.
  */
-function UserForm({ draft, setDraft, vehicles, groups, error, isNew }) {
+function UserForm({ draft, setDraft, vehicles, groups, isNew }) {
   const { t, lang } = useLang()
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }))
   const name = lang === 'ar' ? 'nameAr' : 'nameEn'
@@ -2255,22 +2322,27 @@ function UserForm({ draft, setDraft, vehicles, groups, error, isNew }) {
           <option value="0">{t('common.inactive')}</option>
         </Select>
       </Field>
-
-      {error && (
-        <p className="rounded-xl border border-[#f4634e]/35 bg-[#f4634e]/10 px-4 py-2.5 text-[13px] font-bold text-[#d1452c] sm:col-span-2 dark:text-[#f4634e]">
-          {error}
-        </p>
-      )}
     </div>
   )
 }
 
-function RowActions({ onEdit, onDelete }) {
+function RowActions({ onEdit, onDelete, locked = false, lockTitle }) {
   const { t } = useLang()
   return (
     <span className="inline-flex gap-1">
-      <IconButton icon={Pencil} title={t('common.edit')} onClick={onEdit} />
-      <IconButton icon={Trash2} title={t('common.delete')} tone="red" onClick={onDelete} />
+      <IconButton
+        icon={Pencil}
+        title={locked ? lockTitle : t('common.edit')}
+        onClick={onEdit}
+        disabled={locked}
+      />
+      <IconButton
+        icon={Trash2}
+        title={locked ? lockTitle : t('common.delete')}
+        tone="red"
+        onClick={onDelete}
+        disabled={locked}
+      />
     </span>
   )
 }

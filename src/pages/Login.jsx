@@ -12,6 +12,7 @@ import {
   Satellite,
   Route as RouteIcon,
   BellRing,
+  Smartphone,
 } from 'lucide-react'
 import { useLang } from '../context/LanguageContext'
 import { useAuth, DEMO_CREDENTIALS } from '../context/AuthContext'
@@ -47,7 +48,7 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false)
   const [remember, setRemember] = useState(true)
   const [busy, setBusy] = useState(false)
-  /* null when fine, otherwise 'credentials' | 'network' */
+  /* null when fine, otherwise 'credentials' | 'network' | 'driverApp' */
   const [error, setError] = useState(null)
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight
@@ -306,11 +307,20 @@ export default function Login() {
                 <Checkbox checked={remember} onChange={setRemember} label={t('login.remember')} />
               </div>
 
-              {error && (
-                <p className="flex items-center gap-2 rounded-xl border border-[#f4634e]/35 bg-[#f4634e]/10 px-4 py-3 text-[13px] font-bold text-[#d1452c] dark:text-[#f4634e]">
-                  <AlertCircle size={16} className="shrink-0" />
-                  {t(error === 'network' ? 'login.offline' : 'login.error')}
+              {/* a driver typed real credentials into the wrong app — that is
+                  guidance, not a failure, so it does not wear the error red */}
+              {error === 'driverApp' ? (
+                <p className="flex items-start gap-2 rounded-xl border border-brand-500/35 bg-brand-500/10 px-4 py-3 text-[13px] font-bold text-brand-700 dark:text-brand-300">
+                  <Smartphone size={16} className="mt-px shrink-0" />
+                  {t('login.driverApp')}
                 </p>
+              ) : (
+                error && (
+                  <p className="flex items-center gap-2 rounded-xl border border-[#f4634e]/35 bg-[#f4634e]/10 px-4 py-3 text-[13px] font-bold text-[#d1452c] dark:text-[#f4634e]">
+                    <AlertCircle size={16} className="shrink-0" />
+                    {t(error === 'network' ? 'login.offline' : 'login.error')}
+                  </p>
+                )
               )}
 
               <Button type="submit" size="lg" className="w-full short:h-11 short:text-[15px]" disabled={busy}>
