@@ -32,6 +32,7 @@ import alerts from './alerts.js'
 import geocode from './geocode.js'
 import geofences from './geofences.js'
 import groups from './groups.js'
+import health from './health.js'
 import history from './history.js'
 import maintenance from './maintenance.js'
 import messages from './messages.js'
@@ -55,6 +56,7 @@ export const ROUTES = {
   geocode,
   geofences,
   groups,
+  health,
   history,
   maintenance,
   messages,
