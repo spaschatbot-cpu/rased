@@ -1,7 +1,7 @@
-import { handler, readJson, ok, fail } from '../_lib/http.js'
-import { currentUser, requireUser } from '../_lib/auth.js'
-import { hashPassword, verifyPassword } from '../_lib/crypto.js'
-import { allUsers, findById, publicUser, saveUsers, userWithVehicle } from '../_lib/users.js'
+import { handler, readJson, ok, fail } from '../../_lib/http.js'
+import { currentUser, requireUser } from '../../_lib/auth.js'
+import { hashPassword, verifyPassword } from '../../_lib/crypto.js'
+import { allUsers, findById, publicUser, saveUsers, userWithVehicle } from '../../_lib/users.js'
 
 const MIN_PASSWORD = 6
 const clean = (v, max) => String(v ?? '').trim().slice(0, max)

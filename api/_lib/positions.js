@@ -21,9 +21,16 @@ export const STALE_AFTER_MS = 3 * 60 * 1000
 /** The last fix for one vehicle, or null. */
 export const positionOf = (vehicleId) => get(keyFor(vehicleId))
 
-/** The last fix for every registered vehicle, keyed by id. Absent ones are omitted. */
-export async function allPositions() {
-  const ids = await vehicleIds()
+/**
+ * The last fix for every registered vehicle, keyed by id. Absent ones are omitted.
+ *
+ * `ids` is accepted because the one caller that matters — the position poll —
+ * already holds the registry to read plates off. Fetching it a second time here
+ * cost a third of the poll's storage traffic for a list the caller had in hand,
+ * and the poll runs every few seconds for as long as a dashboard is open.
+ */
+export async function allPositions(ids = null) {
+  ids ??= await vehicleIds()
   if (!ids.length) return {}
 
   const fixes = await mget(ids.map(keyFor))

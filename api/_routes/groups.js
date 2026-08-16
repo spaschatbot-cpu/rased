@@ -7,11 +7,11 @@
  * A branch still holding vehicles or accounts cannot be deleted; the operator
  * moves them first, so nothing is reassigned behind their back.
  */
-import { crud } from './_lib/rest.js'
-import { groups } from './_lib/groups.js'
-import { vehicles } from './_lib/vehicles.js'
-import { allUsers } from './_lib/users.js'
-import { badRequest } from './_lib/collection.js'
+import { crud } from '../_lib/rest.js'
+import { groups } from '../_lib/groups.js'
+import { vehicles } from '../_lib/vehicles.js'
+import { allUsers } from '../_lib/users.js'
+import { badRequest } from '../_lib/collection.js'
 
 export default crud({
   store: groups,

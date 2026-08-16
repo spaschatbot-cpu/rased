@@ -17,16 +17,16 @@
  * The driver app authenticates with `Authorization: Bearer <token>` from
  * `POST /api/auth/login` with `client: "app"`.
  */
-import { handler, readJson, ok, fail } from './_lib/http.js'
-import { requireRole } from './_lib/auth.js'
-import { findById } from './_lib/users.js'
-import { clear, record, statusOf, timeOf, validate } from './_lib/positions.js'
-import { append, prune } from './_lib/history.js'
-import { process, resetState } from './_lib/alerts.js'
-import { distance, geofences } from './_lib/geofences.js'
-import { rules } from './_lib/rules.js'
-import { vehicles } from './_lib/vehicles.js'
-import { close as closeShift, noteFix } from './_lib/shifts.js'
+import { handler, readJson, ok, fail } from '../_lib/http.js'
+import { requireRole } from '../_lib/auth.js'
+import { findById } from '../_lib/users.js'
+import { clear, record, statusOf, timeOf, validate } from '../_lib/positions.js'
+import { append, prune } from '../_lib/history.js'
+import { process, resetState } from '../_lib/alerts.js'
+import { distance, geofences } from '../_lib/geofences.js'
+import { rules } from '../_lib/rules.js'
+import { vehicles } from '../_lib/vehicles.js'
+import { close as closeShift, noteFix } from '../_lib/shifts.js'
 
 /** The signed-in driver and the vehicle they are assigned to. */
 async function driverOf(req) {

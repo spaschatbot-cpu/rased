@@ -14,13 +14,13 @@
  * than the body, and the result is stamped `manual` — so an alert a person
  * sent can always be told apart from one the fleet's own sensors raised.
  */
-import { handler, readJson, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { badRequest, forbidden, query, text } from './_lib/collection.js'
-import { WRITE_ROLES } from './_lib/rest.js'
-import { MANUAL_TYPES, inbox, markRead, removeAlert, sendManual } from './_lib/alerts.js'
-import { findById } from './_lib/users.js'
-import { vehicles as registry } from './_lib/vehicles.js'
+import { handler, readJson, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { badRequest, forbidden, query, text } from '../_lib/collection.js'
+import { WRITE_ROLES } from '../_lib/rest.js'
+import { MANUAL_TYPES, inbox, markRead, removeAlert, sendManual } from '../_lib/alerts.js'
+import { findById } from '../_lib/users.js'
+import { vehicles as registry } from '../_lib/vehicles.js'
 
 /**
  * A driver sees alerts about their own vehicle; everyone else sees the fleet.

@@ -1,27 +1,23 @@
 /**
  * Runs the `api/` folder inside the Vite dev server.
  *
- * On Vercel each file under api/ becomes a function automatically. Locally
- * there is no such runtime, so this plugin mounts the very same modules as
- * middleware — same handlers, same request objects, no second process and no
- * `vercel dev` login.
+ * On Vercel a single catch-all function dispatches every `/api/` request
+ * through `api/_routes/index.js`. Locally there is no such runtime, so this
+ * plugin mounts that same module as middleware — same table, same handlers,
+ * same request objects, no second process and no `vercel dev` login.
  *
  * Modules are loaded through Vite's SSR runner rather than a bare import, so
  * editing anything a handler depends on — a helper, the translations file —
  * invalidates the whole chain. A plain import would cache the dependencies and
  * quietly serve a stale copy of them.
  */
-import path from 'node:path'
 import { loadEnv } from 'vite'
 
-const API_DIR = path.resolve(process.cwd(), 'api')
-
-/** `/api/auth/login` → `api/auth/login.js`. Underscored folders stay private. */
-function resolveHandler(pathname) {
-  const rel = pathname.replace(/^\/api\/?/, '').replace(/\/+$/, '')
-  if (!rel || rel.includes('..') || rel.split('/').some((s) => s.startsWith('_'))) return null
-  return path.join(API_DIR, `${rel}.js`)
-}
+/* The route table, not the filesystem. In production one catch-all function
+   dispatches through this module; resolving paths to files here instead would
+   be a second router, and the drift between two routers shows up as a route
+   that passes every local test and 404s only once deployed. */
+const ROUTER = '/api/_routes/index.js'
 
 export default function devApi() {
   return {
@@ -52,22 +48,10 @@ export default function devApi() {
         const url = new URL(req.url, 'http://localhost')
         if (!url.pathname.startsWith('/api')) return next()
 
-        const file = resolveHandler(url.pathname)
-        if (!file) {
-          res.statusCode = 404
-          res.setHeader('Content-Type', 'application/json')
-          return res.end(JSON.stringify({ ok: false, error: 'not found' }))
-        }
-
         try {
-          const mod = await server.ssrLoadModule(`/${path.relative(process.cwd(), file).split(path.sep).join('/')}`)
+          const mod = await server.ssrLoadModule(ROUTER)
           await mod.default(req, res)
         } catch (err) {
-          if (err?.code === 'ERR_MODULE_NOT_FOUND' || /Failed to load url/.test(err?.message || '')) {
-            res.statusCode = 404
-            res.setHeader('Content-Type', 'application/json')
-            return res.end(JSON.stringify({ ok: false, error: `no route for ${url.pathname}` }))
-          }
           server.config.logger.error(`[dev-api] ${url.pathname}\n${err.stack || err}`)
           res.statusCode = 500
           res.setHeader('Content-Type', 'application/json')

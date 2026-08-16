@@ -9,11 +9,11 @@
  * reporting one — and the whole point of the record is that it is evidence, not
  * a claim.
  */
-import { handler, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { badRequest, forbidden, query } from './_lib/collection.js'
-import { WRITE_ROLES } from './_lib/rest.js'
-import { forDriver } from './_lib/shifts.js'
+import { handler, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { badRequest, forbidden, query } from '../_lib/collection.js'
+import { WRITE_ROLES } from '../_lib/rest.js'
+import { forDriver } from '../_lib/shifts.js'
 
 export default handler({
   async GET(req, res) {

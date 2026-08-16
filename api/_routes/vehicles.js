@@ -7,10 +7,10 @@
  * Deleting a vehicle takes its live fix and its assignment with it, so a driver
  * is never left reporting into a row that no longer exists.
  */
-import { crud } from './_lib/rest.js'
-import { vehicles } from './_lib/vehicles.js'
-import { clear } from './_lib/positions.js'
-import { allUsers, saveUsers } from './_lib/users.js'
+import { crud } from '../_lib/rest.js'
+import { vehicles } from '../_lib/vehicles.js'
+import { clear } from '../_lib/positions.js'
+import { allUsers, saveUsers } from '../_lib/users.js'
 
 export default crud({
   store: vehicles,

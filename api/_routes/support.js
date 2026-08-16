@@ -11,12 +11,12 @@
  * driver — `from` comes from the caller's role, never from the body, so a
  * reply cannot be dressed up as the question it answers.
  */
-import { handler, readJson, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { badRequest, forbidden, query, text } from './_lib/collection.js'
-import { WRITE_ROLES } from './_lib/rest.js'
-import { allUsers, findById } from './_lib/users.js'
-import { allThreads, append, markRead, thread } from './_lib/support.js'
+import { handler, readJson, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { badRequest, forbidden, query, text } from '../_lib/collection.js'
+import { WRITE_ROLES } from '../_lib/rest.js'
+import { allUsers, findById } from '../_lib/users.js'
+import { allThreads, append, markRead, thread } from '../_lib/support.js'
 
 /** Longest message we store. Long enough for a paragraph, short of an essay. */
 const MAX = 2000

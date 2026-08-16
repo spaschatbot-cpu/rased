@@ -11,12 +11,12 @@
  * do something the generic version does not: GET joins the vehicle registry,
  * and POST carries the complete action.
  */
-import { handler, readJson, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { WRITE_ROLES } from './_lib/rest.js'
-import { forbidden, idParam, notFound, query } from './_lib/collection.js'
-import { completedFields, decorate, maintenance, readingFor } from './_lib/maintenance.js'
-import { vehicles } from './_lib/vehicles.js'
+import { handler, readJson, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { WRITE_ROLES } from '../_lib/rest.js'
+import { forbidden, idParam, notFound, query } from '../_lib/collection.js'
+import { completedFields, decorate, maintenance, readingFor } from '../_lib/maintenance.js'
+import { vehicles } from '../_lib/vehicles.js'
 
 function gate(req) {
   const caller = requireUser(req)

@@ -1,5 +1,5 @@
-import { handler, ok } from '../_lib/http.js'
-import { clearedCookie } from '../_lib/auth.js'
+import { handler, ok } from '../../_lib/http.js'
+import { clearedCookie } from '../../_lib/auth.js'
 
 export default handler({
   POST(req, res) {

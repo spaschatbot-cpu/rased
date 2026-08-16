@@ -4,8 +4,16 @@ import { api } from '../lib/api'
 
 const FleetContext = createContext(null)
 
-/** How often the dashboard asks the server for real fixes (ms). */
-const POLL_MS = 5000
+/**
+ * How often the dashboard asks the server for real fixes (ms).
+ *
+ * Ten seconds, not five. The driver app reports every thirty, so half the polls
+ * at the old rate returned a fix the map was already drawing — paid for, and
+ * identical to what was on screen. The interval that matters is the reporting
+ * one; polling faster than it buys nothing but traffic, and this poll runs for
+ * as long as a dashboard stays open.
+ */
+const POLL_MS = 10000
 
 /** How often the alert inbox is refreshed (ms). Alerts are rarer than fixes. */
 const ALERT_POLL_MS = 15000

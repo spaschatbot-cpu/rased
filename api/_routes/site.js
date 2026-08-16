@@ -4,10 +4,10 @@
  *   GET  — public. Every visitor reads the live configuration from here.
  *   PUT  — super-admin only. This is what makes an edit show up for everyone.
  */
-import { handler, readJson, ok } from './_lib/http.js'
-import { requireAdmin } from './_lib/auth.js'
-import { get, set } from './_lib/store.js'
-import { EMPTY, normalise } from './_lib/site.js'
+import { handler, readJson, ok } from '../_lib/http.js'
+import { requireAdmin } from '../_lib/auth.js'
+import { get, set } from '../_lib/store.js'
+import { EMPTY, normalise } from '../_lib/site.js'
 
 const KEY = 'site'
 

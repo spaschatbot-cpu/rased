@@ -8,7 +8,7 @@
  * per request rather than caching them, so a rule switched off stops firing
  * immediately instead of at the next deploy.
  */
-import { crud } from './_lib/rest.js'
-import { rules } from './_lib/rules.js'
+import { crud } from '../_lib/rest.js'
+import { rules } from '../_lib/rules.js'
 
 export default crud({ store: rules, name: 'rules', single: 'rule' })

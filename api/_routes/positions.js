@@ -7,17 +7,20 @@
  * Vercel gives us no way to hold a socket open, so the dashboard polls rather
  * than being pushed to. At a few seconds' interval the map looks the same.
  */
-import { handler, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { findById } from './_lib/users.js'
-import { allPositions, statusOf } from './_lib/positions.js'
-import { vehicles } from './_lib/vehicles.js'
+import { handler, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { findById } from '../_lib/users.js'
+import { allPositions, statusOf } from '../_lib/positions.js'
+import { vehicles } from '../_lib/vehicles.js'
 
 export default handler({
   async GET(req, res) {
     const caller = requireUser(req)
 
-    const [all, fleet] = await Promise.all([allPositions(), vehicles.all()])
+    /* one registry read, used for both the ids to look fixes up by and the
+       plates to label them with — see allPositions() on why it takes ids */
+    const fleet = await vehicles.all()
+    const all = await allPositions(fleet.map((v) => v.id))
     const plates = new Map(fleet.map((v) => [v.id, v.plate]))
     const now = Date.now()
 

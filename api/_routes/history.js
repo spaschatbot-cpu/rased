@@ -8,11 +8,11 @@
  * track rather than a 404: "this vehicle did not report" is an answer, and the
  * screen renders it as one.
  */
-import { handler, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { badRequest, forbidden, query } from './_lib/collection.js'
-import { dayFor, dayOf, daysFor } from './_lib/history.js'
-import { findById } from './_lib/users.js'
+import { handler, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { badRequest, forbidden, query } from '../_lib/collection.js'
+import { dayFor, dayOf, daysFor } from '../_lib/history.js'
+import { findById } from '../_lib/users.js'
 
 /** A driver may replay their own vehicle and nobody else's. */
 async function assertMaySee(caller, vehicleId) {

@@ -8,11 +8,11 @@
  *
  * A driver created here can sign into the mobile app straight away.
  */
-import { handler, readJson, ok, fail } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { hashPassword } from './_lib/crypto.js'
-import { ROLES, allUsers, canManageUsers, publicUser, saveUsers } from './_lib/users.js'
-import { cleanPages, pagesFor } from '../shared/app-pages.js'
+import { handler, readJson, ok, fail } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { hashPassword } from '../_lib/crypto.js'
+import { ROLES, allUsers, canManageUsers, publicUser, saveUsers } from '../_lib/users.js'
+import { cleanPages, pagesFor } from '../../shared/app-pages.js'
 
 const MIN_PASSWORD = 6
 

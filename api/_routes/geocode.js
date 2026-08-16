@@ -10,10 +10,10 @@
  * down, or the point may be somewhere nobody has mapped. Callers show the
  * coordinates in that case, which is what they had to begin with.
  */
-import { handler, ok } from './_lib/http.js'
-import { requireUser } from './_lib/auth.js'
-import { badRequest, query } from './_lib/collection.js'
-import { reverse } from './_lib/geocode.js'
+import { handler, ok } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { badRequest, query } from '../_lib/collection.js'
+import { reverse } from '../_lib/geocode.js'
 
 export default handler({
   async GET(req, res) {

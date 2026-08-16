@@ -6,9 +6,9 @@
  *   DELETE — super-admin only. Removes one message by id.
  */
 import { randomUUID } from 'node:crypto'
-import { handler, readJson, ok, fail } from './_lib/http.js'
-import { requireAdmin } from './_lib/auth.js'
-import { list, removeFromList, unshift } from './_lib/store.js'
+import { handler, readJson, ok, fail } from '../_lib/http.js'
+import { requireAdmin } from '../_lib/auth.js'
+import { list, removeFromList, unshift } from '../_lib/store.js'
 
 const KEY = 'messages'
 const FIELDS = { name: 120, company: 120, phone: 40, email: 160, fleet: 20, message: 4000 }
