@@ -31,6 +31,10 @@ export const liveRole = (role) => RETIRED_ROLES[role] ?? role
 /**
  * Seeded on first run so the platform is usable out of the box. Mirrors the
  * accounts the README documents; every password can be changed from the UI.
+ *
+ * The `pass` values below are development conveniences and nothing more — this
+ * file is public, so they are public. See `seedPassword()` for what happens to
+ * them in production.
  */
 const SEED = [
   { nameAr: 'مدير النظام', nameEn: 'Super admin', username: 'superadmin', email: 'admin@mirsad.sa', role: 'superadmin', groupId: 1, pass: 'Mirsad@2026' },
@@ -43,28 +47,46 @@ const SEED = [
   { nameAr: 'فهد القحطاني', nameEn: 'Fahad Al-Qahtani', username: 'f.qahtani', email: 'f.qahtani@lamar.sa', role: 'driver', groupId: 1, vehicleId: 2, pass: 'Driver@123' },
 ]
 
+const isProduction = () => process.env.NODE_ENV === 'production'
+
+/**
+ * The password a seeded account starts with, or `null` to not seed it at all.
+ *
+ *   superadmin — `ADMIN_PASSWORD`
+ *   everyone else — `DEMO_PASSWORD`
+ *
+ * The literals in `SEED` are the fallback **outside production only**. Four of
+ * those rows carry admin write access, and their passwords are readable by
+ * anyone who opens this file on GitHub — so a deployment that did not choose a
+ * password does not get the account. Locally nothing changes: `npm run dev`
+ * still comes up with the full table and no configuration.
+ */
+function seedPassword(u) {
+  const chosen = u.username === 'superadmin' ? process.env.ADMIN_PASSWORD : process.env.DEMO_PASSWORD
+  return chosen || (isProduction() ? null : u.pass)
+}
+
 function seed() {
   const now = new Date().toISOString()
-  return SEED.map((u, i) => ({
-    id: i + 1,
-    nameAr: u.nameAr,
-    nameEn: u.nameEn,
-    username: u.username,
-    email: u.email,
-    phone: '',
-    role: u.role,
-    groupId: u.groupId,
-    vehicleId: u.vehicleId ?? null,
-    /* null = follow the role. Nothing is granted by hand until someone does. */
-    pages: null,
-    active: true,
-    pass: hashPassword(
-      /* let the environment override the two documented accounts */
-      u.username === 'superadmin' ? process.env.ADMIN_PASSWORD || u.pass : u.pass,
-    ),
-    createdAt: now,
-    lastLoginAt: null,
-  }))
+  return SEED.map((u) => ({ ...u, secret: seedPassword(u) }))
+    .filter((u) => u.secret)
+    .map((u, i) => ({
+      id: i + 1,
+      nameAr: u.nameAr,
+      nameEn: u.nameEn,
+      username: u.username,
+      email: u.email,
+      phone: '',
+      role: u.role,
+      groupId: u.groupId,
+      vehicleId: u.vehicleId ?? null,
+      /* null = follow the role. Nothing is granted by hand until someone does. */
+      pages: null,
+      active: true,
+      pass: hashPassword(u.secret),
+      createdAt: now,
+      lastLoginAt: null,
+    }))
 }
 
 /**
@@ -104,6 +126,16 @@ export async function allUsers() {
   }
 
   const fresh = seed()
+
+  /* Never persist a table with no way into it. An empty or superadmin-less
+     array is a legitimate stored value as far as the branch above is concerned,
+     so writing one here would lock the deployment out permanently — the only
+     cure being to delete the `users` key by hand. Failing the request instead
+     leaves the store untouched, and the message says exactly what is missing. */
+  if (!fresh.some((u) => u.role === 'superadmin')) {
+    throw new Error('ADMIN_PASSWORD is not set — refusing to seed an account table with no superadmin')
+  }
+
   await set(KEY, fresh)
   return fresh
 }
