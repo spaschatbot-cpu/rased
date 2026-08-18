@@ -1,18 +1,26 @@
 import { useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, Rectangle, Polyline, useMap, LayersControl, ZoomControl } from 'react-leaflet'
 import L from 'leaflet'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import { STATUS_COLOR } from '../../data/fleet'
 import { useLang } from '../../context/LanguageContext'
 
 export const RIYADH_CENTER = [24.7136, 46.6753]
 
 /* Leaflet's default icon URLs break under bundlers — we only use DivIcons, but
-   this keeps any accidental default marker from 404-ing. */
+   this keeps any accidental default marker from 404-ing.
+   
+   Pointed at the package, not at unpkg. The CDN spelling worked, but it meant
+   the fallback for "something rendered a marker we did not expect" was itself a
+   request to a third party — a fallback that needs the internet to be having a
+   good day is not much of a fallback. Vite emits these three from our origin. */
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
 })
 
 /** Arrow-in-a-dot icon that rotates with the vehicle heading. */

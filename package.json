@@ -18,6 +18,8 @@
     "seed:trail": "node scripts/seed-demo-trail.mjs"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/tajawal": "^5.3.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.469.0",
     "react": "^19.0.0",
