@@ -1,0 +1,65 @@
+# Builds the driver app for Android.
+#
+# It lives here rather than as a README step because a local Gradle build needs
+# working AF_UNIX loopback sockets, and on a machine where those are blocked --
+# security software does this -- every build dies with "Unable to establish
+# loopback connection", which names a symptom and nothing you can act on. A
+# runner does not have that problem, and the APK stops depending on whose laptop
+# it was built from.
+name: driver apk
+
+on:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/driver-apk.yml'
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: 'API the app talks to'
+        default: 'https://rased-lime.vercel.app/api'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      # android/ is not committed: lib/ is the app and the native project is
+      # generated. Generating it yields a manifest with no permissions, so the
+      # merge below is what keeps the tracker able to see a location at all.
+      - name: Generate the android project
+        working-directory: mobile
+        run: |
+          flutter create --org sa.mirsad --project-name mirsad_driver --platforms=android .
+          node tool/apply-platform-additions.mjs
+
+      - name: Analyze
+        working-directory: mobile
+        run: flutter analyze
+
+      - name: Build
+        working-directory: mobile
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE="${{ inputs.api_base || 'https://rased-lime.vercel.app/api' }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mirsad-driver-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
