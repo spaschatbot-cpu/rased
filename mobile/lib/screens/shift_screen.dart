@@ -3,11 +3,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../i18n.dart';
-import '../services/alerts_store.dart';
 import '../services/tracker.dart';
 import '../theme.dart';
 import '../widgets/location_map.dart';
-import '../widgets/stage_background.dart';
 
 /// شاشة الوردية.
 ///

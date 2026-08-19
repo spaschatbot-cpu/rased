@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../i18n.dart';
 import '../services/alerts_store.dart';
-import '../services/session.dart';
 import '../services/shifts_store.dart';
 import '../services/support_store.dart';
 import '../services/tracker.dart';
