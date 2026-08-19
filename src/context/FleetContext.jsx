@@ -411,7 +411,14 @@ export function FleetProvider({ children }) {
   }, [vehicles])
 
   const selected = useMemo(() => vehicles.find((v) => v.id === selectedId) ?? null, [vehicles, selectedId])
-  const unreadCount = useMemo(() => inbox.filter((a) => !a.read).length, [inbox])
+  /* Guarded because this one runs during render: a bad shape here throws
+     inside useMemo, React unwinds the tree, and the user gets a white page
+     instead of a screen with one wrong number on it. api.js should never
+     let a non-array through now, and this is what happens if it ever does. */
+  const unreadCount = useMemo(
+    () => (Array.isArray(inbox) ? inbox.filter((a) => !a.read).length : 0),
+    [inbox],
+  )
 
   /* ── writes ────────────────────────────────────────────────────────
      Every one of these is the same shape: call the server, then reload the

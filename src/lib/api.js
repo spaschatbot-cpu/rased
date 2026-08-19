@@ -32,10 +32,33 @@ async function request(path, { method = 'GET', body, signal } = {}) {
     throw new ApiError('network unreachable', 0)
   }
 
-  const data = await res.json().catch(() => ({}))
+  /* A refusal is allowed to arrive without a JSON body — a proxy or the edge
+     can produce a bare 404 or 502 — so a failed parse there is not itself the
+     story, and `{}` lets the status below speak. */
+  let data = null
+  let parsed = true
+  try {
+    data = await res.json()
+  } catch {
+    parsed = false
+    data = {}
+  }
+
   if (!res.ok) {
     throw new ApiError(data.error || `request failed (${res.status})`, res.status, data.code ?? null)
   }
+
+  /* A 2xx that is not JSON is not a success, whatever the status line claims.
+     This backend answers /api/* with JSON or not at all, so an HTML body here
+     means something upstream served a page instead — an SPA rewrite that has
+     swallowed the route is the usual one, and it returns 200 while doing it.
+     Returning `{}` for that made every caller destructure `undefined` out of a
+     response that looked fine, and the first `.filter` on it during a render
+     took the whole app down to a white screen with a clean network tab. */
+  if (!parsed || data === null || typeof data !== 'object') {
+    throw new ApiError('the server did not return JSON', res.status)
+  }
+
   return data
 }
 
