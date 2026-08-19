@@ -11,9 +11,10 @@
  * `usesCleartextTraffic` is deliberately not applied. The additions file marks
  * it development-only, and a release build talks to https.
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 
 const MANIFEST = 'android/app/src/main/AndroidManifest.xml'
+const STOCK_TEST = 'test/widget_test.dart'
 const OPEN = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
 
 const PERMISSIONS = [
@@ -36,12 +37,25 @@ if (!xml.includes(OPEN)) {
 }
 
 const missing = PERMISSIONS.filter((p) => !xml.includes(`"${p}"`))
-if (!missing.length) {
-  console.log('permissions already present — nothing to do')
-  process.exit(0)
-}
-
-const block = missing.map((p) => `    <uses-permission android:name="${p}" />`).join('\n')
+if (missing.length) {
+  const block = missing.map((p) => `    <uses-permission android:name="${p}" />`).join('\n')
 writeFileSync(MANIFEST, xml.replace(OPEN, `${OPEN}\n${block}\n`))
 console.log(`merged ${missing.length} permission(s):`)
 for (const p of missing) console.log(`  ${p.split('.').pop()}`)
+} else {
+  console.log('permissions already present')
+}
+
+/* `flutter create` also writes its counter-app widget test, which asserts on a
+   MyApp and an Icons.add that do not exist here — the root widget is
+   MirsadDriverApp. It has never compiled, and flutter_test is not a dependency,
+   so it fails `flutter analyze` with eighteen errors and takes the build with
+   it. Deleting it from the repository was not enough: it comes back every time
+   the project is generated, which is once per CI run.
+
+   Only the stock template is removed. The MyApp reference is the tell — a real
+   test written later will not mention it, and will survive. */
+if (existsSync(STOCK_TEST) && readFileSync(STOCK_TEST, 'utf8').includes('MyApp')) {
+  rmSync(STOCK_TEST)
+  console.log(`removed ${STOCK_TEST} — the generated counter template, which does not compile here`)
+}
