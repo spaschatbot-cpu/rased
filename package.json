@@ -15,7 +15,8 @@
     "test:support": "node scripts/test-support.mjs",
     "test:access": "node scripts/test-access.mjs",
     "test:backfill": "node scripts/test-backfill.mjs",
-    "seed:trail": "node scripts/seed-demo-trail.mjs"
+    "seed:trail": "node scripts/seed-demo-trail.mjs",
+    "reset:test-data": "node scripts/reset-test-data.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

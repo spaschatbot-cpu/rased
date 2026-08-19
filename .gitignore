@@ -14,3 +14,9 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 *.log
+
+# personal Claude Code permissions — grants delete power, not a team default
+.claude/settings.local.json
+
+# credentials for scripts/reset-test-data.mjs — never the app
+.env.admin
