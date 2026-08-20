@@ -15,6 +15,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 
 const MANIFEST = 'android/app/src/main/AndroidManifest.xml'
 const STOCK_TEST = 'test/widget_test.dart'
+const METADATA = '.metadata'
 const OPEN = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
 
 const PERMISSIONS = [
@@ -58,4 +59,29 @@ for (const p of missing) console.log(`  ${p.split('.').pop()}`)
 if (existsSync(STOCK_TEST) && readFileSync(STOCK_TEST, 'utf8').includes('MyApp')) {
   rmSync(STOCK_TEST)
   console.log(`removed ${STOCK_TEST} — the generated counter template, which does not compile here`)
+}
+
+/* Generating for android rewrites .metadata's platform list to just what was
+   asked for, dropping `web` -- which is still built, and is what /driver/ on
+   the site actually serves. Nothing breaks immediately, which is why it kept
+   slipping back in: the file only matters to `flutter migrate` later, and by
+   then the reason it is wrong is long forgotten. */
+const meta = readFileSync(METADATA, 'utf8')
+
+if (!meta.includes('platform: web')) {
+  const lines = meta.split('\n')
+  const at = lines.findIndex((l) => l.trim() === '- platform: android')
+
+  if (at < 0) {
+    console.error(`${METADATA}: no android platform entry to copy the shape from`)
+    process.exit(1)
+  }
+
+  /* its two revision lines, whatever they happen to be indented by */
+  const body = lines.slice(at + 1, at + 3)
+  const head = lines[at].replace('android', 'web')
+  lines.splice(at + 3, 0, head, ...body)
+
+  writeFileSync(METADATA, lines.join('\n'))
+  console.log('restored `platform: web` in .metadata -- generation had dropped it')
 }
