@@ -29,6 +29,7 @@
  */
 import alertRules from './alert-rules.js'
 import alerts from './alerts.js'
+import devices from './devices.js'
 import geocode from './geocode.js'
 import geofences from './geofences.js'
 import groups from './groups.js'
@@ -53,6 +54,7 @@ import me from './auth/me.js'
 export const ROUTES = {
   'alert-rules': alertRules,
   alerts,
+  devices,
   geocode,
   geofences,
   groups,
