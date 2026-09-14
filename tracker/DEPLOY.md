@@ -50,7 +50,7 @@ The file is `640 root:tracker` because it is the only secret on the box:
 
 ```sh
 sudo tee /etc/rased-tracker.env >/dev/null <<EOF
-API_BASE=https://rased-lime.vercel.app/api
+API_BASE=https://www.autotracksa.click/api
 DEVICE_INGEST_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 PORT=5027
 EOF

@@ -47,6 +47,22 @@ for (const p of missing) console.log(`  ${p.split('.').pop()}`)
   console.log('permissions already present')
 }
 
+/* The launcher name. `flutter create` writes the project name there, so the
+   icon on a driver's phone reads `mirsad_driver` — the old brand, in snake
+   case — and it comes back with every generation, the same way the permissions
+   do. The applicationId is deliberately left alone: renaming that is a new app
+   on the phone, not an update. */
+const LABEL = 'أوتو تراك'
+const labelled = readFileSync(MANIFEST, 'utf8')
+const withLabel = labelled.replace(/android:label="[^"]*"/, `android:label="${LABEL}"`)
+
+if (withLabel !== labelled) {
+  writeFileSync(MANIFEST, withLabel)
+  console.log(`set the launcher label to ${LABEL}`)
+} else {
+  console.log('launcher label already set')
+}
+
 /* `flutter create` also writes its counter-app widget test, which asserts on a
    MyApp and an Icons.add that do not exist here — the root widget is
    AutoTrackDriverApp. It has never compiled, and flutter_test is not a dependency,
