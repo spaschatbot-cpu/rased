@@ -48,6 +48,13 @@ jobs:
           flutter create --org sa.mirsad --project-name mirsad_driver --platforms=android .
           node tool/apply-platform-additions.mjs
 
+      # Same reason as the manifest merge: generation writes the stock Flutter
+      # icon into android/res, so the brand mark has to be put back after it
+      # rather than committed. The sources are in assets/icon.
+      - name: Generate the launcher icon
+        working-directory: mobile
+        run: dart run flutter_launcher_icons
+
       - name: Analyze
         working-directory: mobile
         run: flutter analyze

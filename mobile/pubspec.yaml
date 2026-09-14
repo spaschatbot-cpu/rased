@@ -34,5 +34,20 @@ dependencies:
 dev_dependencies:
   flutter_lints: ^4.0.0
 
+  # يولّد أيقونة المشغّل من assets/icon. لازمة لأن `android/` يُولَّد في CI،
+  # فأي أيقونة تُكتب داخله تضيع مع كل بناء — التوليد يتم بعد `flutter create`.
+  flutter_launcher_icons: ^0.14.1
+
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  web:
+    generate: true
+  # التدرّج نفسه الذي يرسمه الموقع خلف الشعار، والدبّوس نفسه فوقه.
+  image_path: assets/icon/icon.png
+  # أندرويد يقصّ الأيقونة بالشكل الذي يختاره المستخدم، فالطبقتان منفصلتان:
+  # الخلفية تمتد للحواف والدبّوس يبقى داخل المنطقة الآمنة.
+  adaptive_icon_background: assets/icon/icon-background.png
+  adaptive_icon_foreground: assets/icon/icon-foreground.png
