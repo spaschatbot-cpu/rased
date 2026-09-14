@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// إعدادات الاتصال بالسيرفر.
 ///
-///   flutter build apk --dart-define=API_BASE=https://mirsad.sa/api
+///   flutter build apk --dart-define=API_BASE=https://autotracksa.click/api
 class Config {
   static const _configured = String.fromEnvironment('API_BASE');
 

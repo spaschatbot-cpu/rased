@@ -14,17 +14,17 @@ import 'theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MirsadDriverApp());
+  runApp(const AutoTrackDriverApp());
 }
 
-class MirsadDriverApp extends StatefulWidget {
-  const MirsadDriverApp({super.key});
+class AutoTrackDriverApp extends StatefulWidget {
+  const AutoTrackDriverApp({super.key});
 
   @override
-  State<MirsadDriverApp> createState() => _MirsadDriverAppState();
+  State<AutoTrackDriverApp> createState() => _AutoTrackDriverAppState();
 }
 
-class _MirsadDriverAppState extends State<MirsadDriverApp> {
+class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
   final _api = ApiClient();
   late final Tracker _tracker = Tracker(api: _api, store: SessionStore());
   late final AlertsStore _alerts = AlertsStore(api: _api);
@@ -95,7 +95,7 @@ class _MirsadDriverAppState extends State<MirsadDriverApp> {
     return ValueListenableBuilder<String>(
       valueListenable: AppLocale.current,
       builder: (context, lang, _) => MaterialApp(
-        title: 'مرصاد — السائق',
+        title: 'أوتو تراك — السائق',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         locale: Locale(lang),

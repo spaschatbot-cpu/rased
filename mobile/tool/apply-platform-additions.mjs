@@ -49,7 +49,7 @@ for (const p of missing) console.log(`  ${p.split('.').pop()}`)
 
 /* `flutter create` also writes its counter-app widget test, which asserts on a
    MyApp and an Icons.add that do not exist here — the root widget is
-   MirsadDriverApp. It has never compiled, and flutter_test is not a dependency,
+   AutoTrackDriverApp. It has never compiled, and flutter_test is not a dependency,
    so it fails `flutter analyze` with eighteen errors and takes the build with
    it. Deleting it from the repository was not enough: it comes back every time
    the project is generated, which is once per CI run.

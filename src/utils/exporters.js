@@ -31,7 +31,7 @@ export function exportToPdf({
   rows,
   rtl = false,
   summary = [],
-  brand = 'مرصاد',
+  brand = 'أوتو تراك',
   brandNote = 'منصة إدارة الأساطيل',
   footerNote = '',
 }) {

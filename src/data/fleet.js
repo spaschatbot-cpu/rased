@@ -1,5 +1,5 @@
 /**
- * Demo fleet dataset for the Mirsad platform.
+ * Demo fleet dataset for the Auto Track platform.
  * Everything is generated from a fixed seed so the UI is stable across reloads
  * while still looking like real telemetry. Swap these functions for API calls
  * when wiring a backend — the shapes are what the UI consumes.

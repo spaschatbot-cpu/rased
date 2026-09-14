@@ -280,7 +280,7 @@ export default function VehicleDashboard() {
   const handlePdf = () =>
     exportToPdf({
       ...exportPayload(),
-      brand: lang === 'ar' ? 'مرصاد' : 'Mirsad',
+      brand: lang === 'ar' ? 'أوتو تراك' : 'Auto Track',
       brandNote: lang === 'ar' ? 'منصة إدارة الأساطيل' : 'Fleet management platform',
       footerNote: `${vehicle.plate} • ${lang === 'ar' ? vehicle.driverAr : vehicle.driverEn}`,
     })

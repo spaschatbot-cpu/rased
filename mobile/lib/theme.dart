@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// ألوان مرصاد — مطابقة لمتغيّرات الموقع حتى يبدو التطبيق امتدادًا له.
+/// ألوان أوتو تراك — مطابقة لمتغيّرات الموقع حتى يبدو التطبيق امتدادًا له.
 class Brand {
   static const green = Color(0xFF00C391);
   static const onGreen = Color(0xFF04120C);

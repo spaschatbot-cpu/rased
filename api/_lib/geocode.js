@@ -33,7 +33,7 @@ const CACHE_TTL_MS = 90 * 864e5
 
 /* Nominatim asks for a contact address in the agent string so they can reach
    whoever is generating traffic. Falls back to something identifiable. */
-const AGENT = `Mirsad-Fleet/1.0 (${process.env.CONTACT_EMAIL || 'ops@mirsad.sa'})`
+const AGENT = `AutoTrack-Fleet/1.0 (${process.env.CONTACT_EMAIL || 'ops@autotracksa.click'})`
 
 const keyFor = (lat, lng) => `geo:${lat.toFixed(PRECISION)},${lng.toFixed(PRECISION)}`
 

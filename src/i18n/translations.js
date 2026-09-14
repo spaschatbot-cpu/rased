@@ -1,7 +1,7 @@
 // Full AR / EN dictionary. Keys are dot-notated and looked up flat.
 export const translations = {
   ar: {
-    'brand.name': 'مرصاد',
+    'brand.name': 'أوتو تراك',
     'brand.tagline': 'منصة تتبع ومراقبة الأسطول',
 
     // ── nav / common ────────────────────────────────────────────
@@ -107,7 +107,7 @@ export const translations = {
     // ── solutions ───────────────────────────────────────────────
     'sol.eyebrow': 'الحلول',
     'sol.title': 'حلول مصمّمة لقطاعك',
-    'sol.desc': 'كل قطاع له تحدياته — ومرصاد يتكيّف مع طبيعة عملك.',
+    'sol.desc': 'كل قطاع له تحدياته — وأوتو تراك يتكيّف مع طبيعة عملك.',
     'sol.logistics.t': 'النقل واللوجستيات',
     'sol.logistics.d': 'تحسين المسارات، تقليل وقت التعطل، وتتبع الشحنات حتى باب العميل.',
     'sol.delivery.t': 'التوصيل والمناديب',
@@ -218,7 +218,7 @@ export const translations = {
     // ── apps ────────────────────────────────────────────────────
     'apps.eyebrow': 'التطبيقات',
     'apps.title': 'أسطولك في جيبك',
-    'apps.desc': 'حمّل تطبيق مرصاد وتابع مركباتك أينما كنت، مع إشعارات فورية لكل حدث مهم.',
+    'apps.desc': 'حمّل تطبيق أوتو تراك وتابع مركباتك أينما كنت، مع إشعارات فورية لكل حدث مهم.',
     'apps.mockTime': '9:41',
     'apps.mockList': 'قائمة المركبات',
     'apps.mockKpi': 'مسافة اليوم',
@@ -269,7 +269,7 @@ export const translations = {
     'contact.addrLabel': 'العنوان',
     'contact.addr': 'الرياض، المملكة العربية السعودية',
     'contact.phoneVal': '+966 11 000 0000',
-    'contact.emailVal': 'info@mirsad.sa',
+    'contact.emailVal': 'info@autotracksa.click',
     'contact.phoneHint': '+966 5X XXX XXXX',
     'contact.emailHint': 'name@company.sa',
     'contact.fleet1': '1 – 10',
@@ -686,7 +686,7 @@ export const translations = {
   },
 
   en: {
-    'brand.name': 'Mirsad',
+    'brand.name': 'Auto Track',
     'brand.tagline': 'Fleet Tracking & Monitoring Platform',
 
     'nav.home': 'Home',
@@ -787,7 +787,7 @@ export const translations = {
 
     'sol.eyebrow': 'Solutions',
     'sol.title': 'Solutions shaped to your industry',
-    'sol.desc': 'Every sector has its own challenges — Mirsad adapts to yours.',
+    'sol.desc': 'Every sector has its own challenges — Auto Track adapts to yours.',
     'sol.logistics.t': 'Transport & logistics',
     'sol.logistics.d': 'Optimise routes, cut downtime, and track shipments to the customer door.',
     'sol.delivery.t': 'Delivery & couriers',
@@ -895,7 +895,7 @@ export const translations = {
 
     'apps.eyebrow': 'Mobile apps',
     'apps.title': 'Your fleet in your pocket',
-    'apps.desc': 'Download Mirsad and follow your vehicles anywhere, with instant push for every event.',
+    'apps.desc': 'Download Auto Track and follow your vehicles anywhere, with instant push for every event.',
     'apps.mockTime': '9:41',
     'apps.mockList': 'Vehicles',
     'apps.mockKpi': "Today's distance",
@@ -944,7 +944,7 @@ export const translations = {
     'contact.addrLabel': 'Address',
     'contact.addr': 'Riyadh, Saudi Arabia',
     'contact.phoneVal': '+966 11 000 0000',
-    'contact.emailVal': 'info@mirsad.sa',
+    'contact.emailVal': 'info@autotracksa.click',
     'contact.phoneHint': '+966 5X XXX XXXX',
     'contact.emailHint': 'name@company.sa',
     'contact.fleet1': '1 – 10',

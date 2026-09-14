@@ -273,7 +273,7 @@ export default function Reports() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `mirsad-${result.type}-${result.from}.csv`
+    a.download = `autotrack-${result.type}-${result.from}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -288,7 +288,7 @@ export default function Reports() {
       rows,
       summary,
       rtl: isRTL,
-      brand: lang === 'ar' ? 'مرصاد' : 'Mirsad',
+      brand: lang === 'ar' ? 'أوتو تراك' : 'Auto Track',
       brandNote: lang === 'ar' ? 'منصة إدارة الأساطيل' : 'Fleet management platform',
       footerNote: `${t(`rep.${result.type}`)} • ${result.from} → ${result.to}`,
     })

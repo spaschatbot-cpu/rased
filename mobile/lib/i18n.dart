@@ -45,7 +45,7 @@ String tr1(String key, Object value) => tr(key).replaceFirst('{}', '$value');
 
 const _ar = <String, String>{
   /* الهوية */
-  'app.title': 'مرصاد',
+  'app.title': 'أوتو تراك',
   'app.subtitle': 'تطبيق السائق',
   'app.hello': 'أهلًا',
   'app.vehicle': 'مركبة رقم {}',
@@ -68,7 +68,7 @@ const _ar = <String, String>{
   'login.remember': 'تذكّرني',
   'login.secure': 'اتصال مشفّر ومحمي',
   'login.liveNow': 'مباشر الآن',
-  'login.copyright': '© 2026 مرصاد — جميع الحقوق محفوظة',
+  'login.copyright': '© 2026 أوتو تراك — جميع الحقوق محفوظة',
   'login.failed': 'اسم المستخدم أو كلمة المرور غير صحيحة',
   'login.driversOnly': 'هذا التطبيق للسائقين فقط',
   'login.noServer': 'تعذّر الاتصال بالخادم — تأكد من الشبكة',
@@ -98,7 +98,7 @@ const _ar = <String, String>{
   'shift.queued': 'نقاط في الانتظار',
 
   /* الإشعار الثابت أثناء الوردية */
-  'notif.title': 'مرصاد — الوردية جارية',
+  'notif.title': 'أوتو تراك — الوردية جارية',
   'notif.body': 'يُرسل موقع المركبة أثناء الوردية',
 
   /* الموقع */
@@ -195,7 +195,7 @@ const _ar = <String, String>{
 };
 
 const _en = <String, String>{
-  'app.title': 'Mirsad',
+  'app.title': 'Auto Track',
   'app.subtitle': 'Driver app',
   'app.hello': 'Hello',
   'app.vehicle': 'Vehicle no. {}',
@@ -216,7 +216,7 @@ const _en = <String, String>{
   'login.remember': 'Remember me',
   'login.secure': 'Encrypted, protected connection',
   'login.liveNow': 'Live now',
-  'login.copyright': '© 2026 Mirsad — all rights reserved',
+  'login.copyright': '© 2026 Auto Track — all rights reserved',
   'login.failed': 'Wrong username or password',
   'login.driversOnly': 'This app is for drivers only',
   'login.noServer': 'Could not reach the server — check your connection',
@@ -244,7 +244,7 @@ const _en = <String, String>{
   'shift.lastSent': 'Last sent',
   'shift.queued': 'points queued',
 
-  'notif.title': 'Mirsad — shift running',
+  'notif.title': 'Auto Track — shift running',
   'notif.body': 'Sending the vehicle location during the shift',
 
   'loc.yours': 'Your location',

@@ -37,7 +37,7 @@ export const liveRole = (role) => RETIRED_ROLES[role] ?? role
  * them in production.
  */
 const SEED = [
-  { nameAr: 'مدير النظام', nameEn: 'Super admin', username: 'superadmin', email: 'admin@mirsad.sa', role: 'superadmin', groupId: 1, pass: 'Mirsad@2026' },
+  { nameAr: 'مدير النظام', nameEn: 'Super admin', username: 'superadmin', email: 'admin@autotracksa.click', role: 'superadmin', groupId: 1, pass: 'Mirsad@2026' },
   { nameAr: 'شركة لامار', nameEn: 'Lamar Company', username: '7034710512', email: 'ops@lamar.sa', role: 'admin', groupId: 1, pass: '7034710512' },
   { nameAr: 'خالد العتيبي', nameEn: 'Khalid Al-Otaibi', username: 'k.otaibi', email: 'k.otaibi@lamar.sa', role: 'admin', groupId: 1, pass: 'Mirsad@123' },
   { nameAr: 'سعود الدوسري', nameEn: 'Saud Al-Dosari', username: 's.dosari', email: 's.dosari@lamar.sa', role: 'admin', groupId: 2, pass: 'Mirsad@123' },

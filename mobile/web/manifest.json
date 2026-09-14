@@ -1,6 +1,6 @@
 {
-    "name": "mirsad_driver",
-    "short_name": "mirsad_driver",
+    "name": "أوتو تراك — السائق",
+    "short_name": "أوتو تراك",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

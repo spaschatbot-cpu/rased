@@ -21,7 +21,7 @@ const ROUTER = '/api/_routes/index.js'
 
 export default function devApi() {
   return {
-    name: 'mirsad-dev-api',
+    name: 'autotrack-dev-api',
     apply: 'serve',
 
     /* Vite only exposes .env to the browser bundle; the handlers read
