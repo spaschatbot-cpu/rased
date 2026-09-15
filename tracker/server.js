@@ -9,7 +9,7 @@
  * the site cannot provide.
  *
  *   PORT                  what to listen on (default 5027)
- *   API_BASE              e.g. https://www.autotracksa.click/api
+ *   API_BASE              e.g. https://autotracksa.click/api
  *   DEVICE_INGEST_SECRET  must match the value the API has
  *
  * Run: node tracker/server.js

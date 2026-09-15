@@ -17,7 +17,7 @@ on:
     inputs:
       api_base:
         description: 'API the app talks to'
-        default: 'https://www.autotracksa.click/api'
+        default: 'https://autotracksa.click/api'
 
 permissions:
   contents: read
@@ -63,7 +63,7 @@ jobs:
         working-directory: mobile
         run: |
           flutter build apk --release \
-            --dart-define=API_BASE="${{ inputs.api_base || 'https://www.autotracksa.click/api' }}"
+            --dart-define=API_BASE="${{ inputs.api_base || 'https://autotracksa.click/api' }}"
 
       - uses: actions/upload-artifact@v4
         with:
