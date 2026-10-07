@@ -144,7 +144,7 @@ const keysOf = (group) => BASE_KEYS.filter((k) => group.prefixes.some((p) => k.s
    things, so each one gets a card instead of a run of loose inputs.     */
 
 /* Trailing decorations that mark a key as another slot of the SAME thing:
-   price.basic / price.basicD / price.basicVal all describe one plan. */
+   price.basic / price.basicD both describe one plan. */
 const SLOT_SUFFIX = /(D|Val|Label|Hint|\d+)$/
 
 function stemOf(key) {

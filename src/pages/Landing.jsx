@@ -874,30 +874,21 @@ function HowItWorks() {
    PRICING
    ══════════════════════════════════════════════════════════════════ */
 function Pricing() {
-  const { t, nf } = useLang()
+  const { t } = useLang()
 
-  /* The amount is a copy slot like any other, so the super-admin can reprice
-     without a deploy. A number gets locale grouping; anything else (or a
-     cleared field) prints as typed, which also gives us the "contact us" row. */
-  const amount = (key) => {
-    if (!key) return null
-    const raw = t(key).trim()
-    if (!raw) return null
-    const n = Number(raw.replace(/,/g, ''))
-    return Number.isFinite(n) ? nf(n) : raw
-  }
-
+  /* No amounts on the public page: every plan is quoted by the sales team, so
+     the cards compare what each plan includes and the price slot asks to talk. */
   const plans = [
     {
-      k: 'basic', price: amount('price.basicVal'), popular: false,
+      k: 'basic', popular: false,
       features: ['price.f.live', 'price.f.history', 'price.f.alerts', 'price.f.reports', 'price.f.support'],
     },
     {
-      k: 'pro', price: amount('price.proVal'), popular: true,
+      k: 'pro', popular: true,
       features: ['price.f.live', 'price.f.history1y', 'price.f.alertsAdv', 'price.f.geo', 'price.f.reports', 'price.f.api', 'price.f.supportPro'],
     },
     {
-      k: 'ent', price: null, popular: false,
+      k: 'ent', popular: false,
       features: ['price.f.live', 'price.f.history1y', 'price.f.alertsAdv', 'price.f.geo', 'price.f.api', 'price.f.manager', 'price.f.sla'],
     },
   ]
@@ -942,25 +933,12 @@ function Pricing() {
                   </div>
                   <p className="relative mt-1.5 text-[13px] leading-relaxed text-muted">{t(`price.${p.k}D`)}</p>
 
-                  {/* price block — fixed height so the three rows line up */}
-                  <div className="relative mt-7 min-h-[86px]">
-                    {p.price ? (
-                      <>
-                        <div className="flex items-end gap-2">
-                          <span className="mb-2 text-[13px] font-extrabold text-brand-500">{t('price.currency')}</span>
-                          <span className="text-[52px] font-extrabold leading-none tabular-nums tracking-tight">
-                            {p.price}
-                          </span>
-                        </div>
-                        <p className="mt-2.5 text-xs text-muted">{t('price.month')}</p>
-                      </>
-                    ) : (
-                      <div className="flex h-full flex-col justify-end">
-                        <span className="text-[32px] font-extrabold leading-tight tracking-tight">
-                          {t('price.custom')}
-                        </span>
-                      </div>
-                    )}
+                  {/* price slot — same height on every card so the rows line up */}
+                  <div className="relative mt-7 flex min-h-[64px] flex-col justify-end">
+                    <span className="text-[26px] font-extrabold leading-tight tracking-tight">
+                      {t('price.custom')}
+                    </span>
+                    <p className="mt-1.5 text-xs text-muted">{t('price.customHint')}</p>
                   </div>
 
                   <ul className="relative mt-7 flex-1 space-y-3 border-t border-[var(--s-border)] pt-6">
@@ -980,11 +958,11 @@ function Pricing() {
                   </ul>
 
                   <Button
-                    to="/login"
+                    href="#contact"
                     variant={p.popular ? 'primary' : 'outline'}
                     className={cn('relative mt-8 w-full', p.popular && 'shadow-lg shadow-brand-500/25')}
                   >
-                    {p.price ? t('price.cta') : t('price.ctaEnt')}
+                    {t('price.ctaEnt')}
                   </Button>
                 </article>
               </Reveal>
