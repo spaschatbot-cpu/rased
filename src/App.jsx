@@ -18,7 +18,6 @@ import HistoryMap from './pages/app/HistoryMap'
 import Reports from './pages/app/Reports'
 import Alerts from './pages/app/Alerts'
 import Management from './pages/app/Management'
-import SuperAdmin from './pages/admin/SuperAdmin'
 import NotFound from './pages/NotFound'
 
 /** Held while the session cookie is being checked — redirecting first would
@@ -29,15 +28,6 @@ function SessionGate() {
       <span className="size-8 animate-spin rounded-full border-2 border-brand-500/25 border-t-brand-500" />
     </div>
   )
-}
-
-function RequireAdmin({ children }) {
-  const { isAuthed, isAdmin, loading } = useAuth()
-  const location = useLocation()
-  if (loading) return <SessionGate />
-  if (!isAuthed) return <Navigate to="/login" state={{ from: location.pathname }} replace />
-  if (!isAdmin) return <Navigate to="/app" replace />
-  return children
 }
 
 function RequireAuth({ children }) {
@@ -78,15 +68,6 @@ export default function App() {
               </Route>
 
               <Route path="/login" element={<Login />} />
-
-              <Route
-                path="/admin"
-                element={
-                  <RequireAdmin>
-                    <SuperAdmin />
-                  </RequireAdmin>
-                }
-              />
 
               <Route
                 path="/app"

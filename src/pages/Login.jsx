@@ -39,7 +39,7 @@ const COMPACT_LABEL = 'short:[&>span:first-child]:mb-1 short:[&>span:first-child
 
 export default function Login() {
   const { t, isRTL } = useLang()
-  const { login, isAuthed, isAdmin } = useAuth()
+  const { login, isAuthed } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -55,7 +55,7 @@ export default function Login() {
   const Back = isRTL ? ArrowRight : ArrowLeft
   const from = location.state?.from ?? '/app'
 
-  if (isAuthed) return <Navigate to={isAdmin ? '/admin' : from} replace />
+  if (isAuthed) return <Navigate to={from} replace />
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -63,7 +63,7 @@ export default function Login() {
     setError(null)
     const res = await login(username, password)
     setBusy(false)
-    if (res.ok) navigate(res.role === 'superadmin' ? '/admin' : from, { replace: true })
+    if (res.ok) navigate(from, { replace: true })
     else setError(res.error)
   }
 
