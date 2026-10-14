@@ -17,6 +17,7 @@ class Session {
   int? get vehicleId => user['vehicleId'] as int?;
   String get nameAr => (user['nameAr'] as String?) ?? '';
   String get username => (user['username'] as String?) ?? '';
+  String get role => (user['role'] as String?) ?? '';
 
   Map<String, dynamic>? get _vehicle => user['vehicle'] as Map<String, dynamic>?;
 

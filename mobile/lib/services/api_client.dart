@@ -137,6 +137,29 @@ class ApiClient {
     return _send('PATCH', id == null ? '/alerts' : '/alerts?id=$id', token: token);
   }
 
+  /// سجلّ المركبات — اللوحة والموديل والسائق، لا الموقع.
+  Future<List<Map<String, dynamic>>> vehicles(String token) async {
+    final data = await _send('GET', '/vehicles', token: token);
+    return ((data['vehicles'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  /// آخر موقع لكل مركبة تُرسل. السيرفر يحسب الحالة وعمر النقطة بساعته هو.
+  Future<List<Map<String, dynamic>>> positions(String token) async {
+    final data = await _send('GET', '/positions', token: token);
+    return ((data['positions'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  /// مسار مركبة في يوم: النقاط والرحلات والوقفات والإجماليات.
+  Future<Map<String, dynamic>> historyDay(String token, int vehicleId, String date) {
+    return _send('GET', '/history?vehicle=$vehicleId&date=$date', token: token);
+  }
+
+  /// الأيام التي سُجّل فيها مسار لهذه المركبة (YYYY-MM-DD).
+  Future<List<String>> historyDays(String token, int vehicleId) async {
+    final data = await _send('GET', '/history?vehicle=$vehicleId&days=1', token: token);
+    return ((data['days'] as List?) ?? const []).map((d) => '$d').toList();
+  }
+
   /// اسم المكان عند إحداثيات. يعيد `null` لو تعذّر — الإحداثيات تبقى معروضة.
   ///
   /// البحث يجري على السيرفر لا في التطبيق: هناك ذاكرة مؤقتة يشترك فيها كل

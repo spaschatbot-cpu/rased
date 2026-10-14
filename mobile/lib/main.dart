@@ -3,12 +3,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'i18n.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_shell.dart';
-import 'services/alerts_store.dart';
-import 'services/shifts_store.dart';
+import 'screens/tracking_shell.dart';
 import 'services/api_client.dart';
+import 'services/fleet_store.dart';
 import 'services/session.dart';
-import 'services/support_store.dart';
 import 'services/tracker.dart';
 import 'theme.dart';
 
@@ -27,9 +25,7 @@ class AutoTrackDriverApp extends StatefulWidget {
 class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
   final _api = ApiClient();
   late final Tracker _tracker = Tracker(api: _api, store: SessionStore());
-  late final AlertsStore _alerts = AlertsStore(api: _api);
-  late final ShiftsStore _shifts = ShiftsStore(api: _api);
-  late final SupportStore _support = SupportStore(api: _api);
+  late final FleetStore _fleet = FleetStore(api: _api)..onAuthFailure = _tracker.signOut;
 
   /// نبقى على شاشة الانتظار حتى تُقرأ الجلسة المخزَّنة، وإلا ومض السائق
   /// على شاشة الدخول لحظة عند كل فتح رغم أنه مسجّل بالفعل.
@@ -47,7 +43,7 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
     await AppLocale.restore();
     await _tracker.restore();
 
-    /* صندوق التنبيهات يتبع الجلسة: يبدأ السؤال عند الدخول ويتوقف عند الخروج،
+    /* الأسطول يتبع الجلسة: يبدأ السؤال عند الدخول ويتوقف عند الخروج،
        فلا يسأل السيرفر بتوكن انتهى */
     _tracker.addListener(_followSession);
     _followSession();
@@ -72,18 +68,13 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
   }
 
   void _followSession() {
-    final token = _tracker.session?.token;
-    _alerts.watch(token);
-    _shifts.watch(token);
-    _support.watch(token);
+    _fleet.watch(_tracker.session?.token);
   }
 
   @override
   void dispose() {
     _tracker.removeListener(_followSession);
-    _alerts.dispose();
-    _shifts.dispose();
-    _support.dispose();
+    _fleet.dispose();
     _tracker.dispose();
     super.dispose();
   }
@@ -95,7 +86,7 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
     return ValueListenableBuilder<String>(
       valueListenable: AppLocale.current,
       builder: (context, lang, _) => MaterialApp(
-        title: 'أوتو تراك — السائق',
+        title: 'أوتو تراك',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         locale: Locale(lang),
@@ -115,12 +106,7 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
                 animation: _tracker,
                 builder: (context, _) => _tracker.session == null
                     ? LoginScreen(tracker: _tracker, api: _api)
-                    : HomeShell(
-                        tracker: _tracker,
-                        alerts: _alerts,
-                        shifts: _shifts,
-                        support: _support,
-                      ),
+                    : TrackingShell(tracker: _tracker, fleet: _fleet, api: _api),
               ),
       ),
     );

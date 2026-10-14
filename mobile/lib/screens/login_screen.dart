@@ -9,9 +9,7 @@ import '../widgets/stage_background.dart';
 
 /// شاشة الدخول.
 ///
-/// تتبع تصميم صفحة الدخول في الموقع: مسرح داكن متحرّك خلف بطاقة فاتحة، مع
-/// تغيير واحد — النص هنا يقول «تطبيق السائق» لا «مركز التحكم»، فالسائق يدخل
-/// إلى وردية لا إلى لوحة إدارة.
+/// تتبع تصميم صفحة الدخول في الموقع: مسرح داكن متحرّك خلف بطاقة فاتحة.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.tracker, required this.api});
 
@@ -55,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on ApiException catch (e) {
       setState(() {
         _error = switch (e.status) {
-          403 => tr('login.driversOnly'),
+          403 => tr('login.disabled'),
           401 => tr('login.failed'),
           0 => tr('login.noServer'),
           _ => e.message,
