@@ -89,8 +89,8 @@ check('app learns its vehicle', r.data.user?.vehicleId, 4)
 r = await call('/auth/me', { bearer: 'newdriver' })
 check('token authenticates', r.data.user?.username, 't.driver')
 
-/* ── the app is drivers only ──────────────────────────────────── */
-check('admin refused by the app', (await signIn('x', '7034710512', '7034710512', 'app')).status, 403)
+/* ── the app is the fleet tracker: every role signs in ────────── */
+check('admin signs into the app', (await signIn('x', '7034710512', '7034710512', 'app')).status, 200)
 check('driver cannot list accounts', (await call('/users', { bearer: 'newdriver' })).status, 403)
 
 /* ── and the dashboard is not for drivers ─────────────────────── */

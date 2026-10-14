@@ -6,9 +6,9 @@ import { findByUsername, publicUser, touchLogin, userWithVehicle } from '../../_
 /**
  * Sign in.
  *
- * `client: 'app'` marks a driver-app login: it returns the token in the body
- * for the app to store, and refuses roles that have no business in it. The
- * dashboard gets the same session as a cookie instead.
+ * `client: 'app'` marks a mobile-app login: it returns the token in the body
+ * for the app to store. The dashboard gets the same session as a cookie
+ * instead.
  */
 export default handler({
   async POST(req, res) {
@@ -27,14 +27,13 @@ export default handler({
     }
     if (!account.active) return fail(res, 403, 'account is disabled')
 
+    /* The app is the fleet tracker now, so every role may sign in to it. What
+       each role sees is still decided per route, as on the dashboard. */
     const forApp = client === 'app'
-    if (forApp && account.role !== 'driver') {
-      return fail(res, 403, 'this app is for drivers only')
-    }
 
-    /* The mirror of the rule above. This one carries a `code` because the
-       dashboard has to tell it apart from a wrong password to point the
-       driver at the right app — the other refusals only need to be read. */
+    /* This one carries a `code` because the dashboard has to tell it apart
+       from a wrong password to point the driver at the app — the other
+       refusals only need to be read. */
     if (!forApp && account.role === 'driver') {
       return send(res, 403, {
         ok: false,
