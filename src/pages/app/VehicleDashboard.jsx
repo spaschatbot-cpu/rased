@@ -249,7 +249,11 @@ export default function VehicleDashboard() {
   const speedData = isDaily ? speedProfile : monthlySpeed
   const speedKey = isDaily ? 'hour' : 'label'
   const avgSpeed = speedData.reduce((s, d) => s + d.avgSpeed, 0) / (speedData.length || 1)
-  const speedPeak = speedData.reduce((max, d) => (d.avgSpeed > max.avgSpeed ? d : max), speedData[0])
+  /* null until there is something to rank — the series is empty before the
+     usage request lands, after it fails, and for a month with no trail */
+  const speedPeak = speedData.length
+    ? speedData.reduce((max, d) => (d.avgSpeed > max.avgSpeed ? d : max), speedData[0])
+    : null
   const tickNum = (v) => nf(v)
 
   /* ── التصدير: نفس بيانات الفترة المعروضة ─────────────────────────── */
@@ -654,11 +658,13 @@ export default function VehicleDashboard() {
                 <span className="rounded-xl border border-[var(--s-border)] bg-[var(--s-panel-2)] px-3 py-1.5 text-[12px] font-bold text-muted">
                   {lang === 'ar' ? 'الذروة' : 'Peak'}
                   <span className="ms-1.5 tabular-nums text-[var(--s-text)]">
-                    {nf(speedPeak.avgSpeed)} {t('common.kmh')}
+                    {speedPeak ? `${nf(speedPeak.avgSpeed)} ${t('common.kmh')}` : '—'}
                   </span>
-                  <span className="ms-1.5 tabular-nums text-[var(--s-text-muted)]" dir="ltr">
-                    {isDaily ? speedPeak.hour : speedPeak.label}
-                  </span>
+                  {speedPeak && (
+                    <span className="ms-1.5 tabular-nums text-[var(--s-text-muted)]" dir="ltr">
+                      {isDaily ? speedPeak.hour : speedPeak.label}
+                    </span>
+                  )}
                 </span>
                 <span className="rounded-xl border border-[var(--s-border)] bg-[var(--s-panel-2)] px-3 py-1.5 text-[12px] font-bold text-muted">
                   {avgLabel}
