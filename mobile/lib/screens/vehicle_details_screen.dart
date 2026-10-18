@@ -153,9 +153,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     final pos = _position;
     final status = '${pos?['status'] ?? 'offline'}';
     final tone = statusColor(status);
-    final point = pos == null
-        ? null
-        : LatLng((pos['lat'] as num).toDouble(), (pos['lng'] as num).toDouble());
+    final point = pos == null ? null : LatLng((pos['lat'] as num).toDouble(), (pos['lng'] as num).toDouble());
     final speed = (pos?['speed'] as num?)?.toInt() ?? 0;
     final heading = (pos?['heading'] as num?)?.toInt() ?? 0;
     final age = (pos?['ageSeconds'] as num?)?.toInt();
@@ -178,8 +176,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                   Icon(Icons.portable_wifi_off_rounded, color: Palette.muted),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(tr('fleet.neverReported'),
-                        style: TextStyle(fontSize: 13, color: Palette.muted)),
+                    child:
+                        Text(tr('fleet.neverReported'), style: TextStyle(fontSize: 13, color: Palette.muted)),
                   ),
                 ],
               ),
@@ -250,7 +248,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(
@@ -322,11 +319,9 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               const SizedBox(width: 8),
               Expanded(
                   child: _Mini(
-                      label: tr('hist.distance'),
-                      value: '${stats['totalDistance'] ?? 0} ${tr('hist.km')}')),
+                      label: tr('hist.distance'), value: '${stats['totalDistance'] ?? 0} ${tr('hist.km')}')),
               const SizedBox(width: 8),
-              Expanded(
-                  child: _Mini(label: tr('hist.maxSpeed'), value: '${stats['maxSpeed'] ?? 0}')),
+              Expanded(child: _Mini(label: tr('hist.maxSpeed'), value: '${stats['maxSpeed'] ?? 0}')),
             ],
           ),
           const SizedBox(height: 12),
@@ -335,8 +330,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
           const SizedBox(height: 8),
           if (trips.isEmpty)
             _Panel(
-              child: Text(tr('vd.noTrips'),
-                  textAlign: TextAlign.center, style: TextStyle(color: Palette.muted)),
+              child:
+                  Text(tr('vd.noTrips'), textAlign: TextAlign.center, style: TextStyle(color: Palette.muted)),
             )
           else
             for (final (i, t) in trips.indexed)
@@ -357,7 +352,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                         child: Text('${_clock(t['startAt'] as String?)} ← ${_clock(t['endAt'] as String?)}',
                             style: const TextStyle(fontWeight: FontWeight.w800)),
                       ),
-                      Text('${t['distance'] ?? 0} ${tr('hist.km')} · ${t['durationMin'] ?? 0} ${tr('hist.min')}',
+                      Text(
+                          '${t['distance'] ?? 0} ${tr('hist.km')} · ${t['durationMin'] ?? 0} ${tr('hist.min')}',
                           style: TextStyle(fontSize: 12, color: Palette.muted)),
                     ],
                   ),
@@ -459,36 +455,52 @@ class _HeaderCard extends StatelessWidget {
     final status = '${position?['status'] ?? 'offline'}';
     final plate = '${vehicle['plate'] ?? ''}';
 
+    final tone = statusColor(status);
+    final model = _pick(vehicle, 'modelAr', 'modelEn');
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
       decoration: BoxDecoration(
         color: Palette.panel,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Palette.border),
       ),
       child: Row(
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: statusColor(status).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: tone.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: tone.withValues(alpha: 0.3)),
             ),
-            child: Icon(Icons.directions_car_filled_rounded, size: 34, color: statusColor(status)),
+            child: Icon(Icons.directions_car_filled_rounded, size: 22, color: tone),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                StatusPill(status: status),
-                const SizedBox(height: 8),
-                SaudiPlate(plate: plate),
+                Text(
+                  plate,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.ltr,
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                ),
+                if (model.isNotEmpty)
+                  Text(model,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, color: Palette.muted)),
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          StatusPill(status: status),
         ],
       ),
     );
@@ -505,8 +517,23 @@ class SaudiPlate extends StatelessWidget {
   final String plate;
 
   static const _letters = {
-    'A': 'ا', 'B': 'ب', 'J': 'ح', 'D': 'د', 'R': 'ر', 'S': 'س', 'X': 'ص', 'T': 'ط',
-    'E': 'ع', 'G': 'ق', 'K': 'ك', 'L': 'ل', 'Z': 'م', 'N': 'ن', 'H': 'هـ', 'U': 'و', 'V': 'ى',
+    'A': 'ا',
+    'B': 'ب',
+    'J': 'ح',
+    'D': 'د',
+    'R': 'ر',
+    'S': 'س',
+    'X': 'ص',
+    'T': 'ط',
+    'E': 'ع',
+    'G': 'ق',
+    'K': 'ك',
+    'L': 'ل',
+    'Z': 'م',
+    'N': 'ن',
+    'H': 'هـ',
+    'U': 'و',
+    'V': 'ى',
   };
 
   static String _arabicDigits(String s) =>
@@ -589,10 +616,10 @@ class _Tabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(5),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Palette.panel,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Palette.border),
       ),
       child: LayoutBuilder(
@@ -600,7 +627,7 @@ class _Tabs extends StatelessWidget {
           final width = box.maxWidth / items.length;
           final rtl = Directionality.of(context) == TextDirection.rtl;
           return SizedBox(
-            height: 46,
+            height: 38,
             child: Stack(
               children: [
                 AnimatedPositioned(
@@ -614,7 +641,7 @@ class _Tabs extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(colors: [Brand.green, Color(0xFF00A87C)]),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
                           color: Brand.green.withValues(alpha: 0.3),
@@ -625,36 +652,38 @@ class _Tabs extends StatelessWidget {
                     ),
                   ),
                 ),
-                Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++)
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => onChanged(i),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(items[i].$1,
-                                  size: 17, color: i == index ? Brand.onGreen : Palette.muted),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  items[i].$2,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w900,
-                                    color: i == index ? Brand.onGreen : Palette.muted,
+                Positioned.fill(
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < items.length; i++)
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => onChanged(i),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(items[i].$1,
+                                    size: 16, color: i == index ? Brand.onGreen : Palette.muted),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    items[i].$2,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      color: i == index ? Brand.onGreen : Palette.muted,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -902,8 +931,7 @@ class _Metric extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(value, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: tone)),
-          if (note != null)
-            Text(note!, style: TextStyle(fontSize: 10, color: Palette.muted)),
+          if (note != null) Text(note!, style: TextStyle(fontSize: 10, color: Palette.muted)),
         ],
       ),
     );
