@@ -11,26 +11,22 @@
  */
 import { handler, ok } from '../_lib/http.js'
 import { requireUser } from '../_lib/auth.js'
-import { badRequest, forbidden, notFound, query } from '../_lib/collection.js'
+import { badRequest, notFound, query } from '../_lib/collection.js'
 import { vehicles } from '../_lib/vehicles.js'
 import { groups } from '../_lib/groups.js'
 import { positionOf, statusOf } from '../_lib/positions.js'
 import { dayFor } from '../_lib/history.js'
-import { allUsers, findById } from '../_lib/users.js'
+import { allUsers } from '../_lib/users.js'
 import { assignmentsFor } from '../_lib/assignments.js'
 import { dayOf } from '../../shared/clock.js'
 
 export default handler({
   async GET(req, res) {
-    const caller = requireUser(req)
+    /* every signed-in account sees the whole fleet — drivers included, since
+       the app became the fleet tracker and is used by them that way */
+    requireUser(req)
     const id = Number(query(req).get('id'))
     if (!id) throw badRequest('id is required')
-
-    /* the same rule as the live map: a driver sees their own vehicle only */
-    if (caller.r === 'driver') {
-      const me = await findById(caller.i)
-      if (me?.vehicleId !== id) throw forbidden('you may only open your own vehicle')
-    }
 
     const vehicle = await vehicles.find(id)
     if (!vehicle) throw notFound()

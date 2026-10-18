@@ -10,25 +10,18 @@
  */
 import { handler, ok } from '../_lib/http.js'
 import { requireUser } from '../_lib/auth.js'
-import { badRequest, forbidden, query } from '../_lib/collection.js'
+import { badRequest, query } from '../_lib/collection.js'
 import { dayFor, dayOf, daysFor } from '../_lib/history.js'
-import { findById } from '../_lib/users.js'
 
-/** A driver may replay their own vehicle and nobody else's. */
-async function assertMaySee(caller, vehicleId) {
-  if (caller.r !== 'driver') return
-  const driver = await findById(caller.i)
-  if (driver?.vehicleId !== vehicleId) throw forbidden('you may only replay your own vehicle')
-}
 
 export default handler({
   async GET(req, res) {
-    const caller = requireUser(req)
+    /* any signed-in account may replay any vehicle — see positions.js */
+    requireUser(req)
     const params = query(req)
 
     const vehicleId = Number(params.get('vehicle'))
     if (!vehicleId) throw badRequest('vehicle is required')
-    await assertMaySee(caller, vehicleId)
 
     if (params.get('days')) {
       return ok(res, { ok: true, vehicleId, days: await daysFor(vehicleId) })

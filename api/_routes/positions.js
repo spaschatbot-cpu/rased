@@ -9,13 +9,12 @@
  */
 import { handler, ok } from '../_lib/http.js'
 import { requireUser } from '../_lib/auth.js'
-import { findById } from '../_lib/users.js'
 import { allPositions, statusOf } from '../_lib/positions.js'
 import { vehicles } from '../_lib/vehicles.js'
 
 export default handler({
   async GET(req, res) {
-    const caller = requireUser(req)
+    requireUser(req)
 
     /* one registry read, used for both the ids to look fixes up by and the
        plates to label them with — see allPositions() on why it takes ids */
@@ -24,14 +23,10 @@ export default handler({
     const plates = new Map(fleet.map((v) => [v.id, v.plate]))
     const now = Date.now()
 
-    /* Watching the fleet is an operations job. A driver may see where their own
-       vehicle is, but handing them every colleague's live location would be a
-       privacy leak, not a feature. */
-    let visible = Object.values(all)
-    if (caller.r === 'driver') {
-      const driver = await findById(caller.i)
-      visible = visible.filter((fix) => fix.vehicleId === driver?.vehicleId)
-    }
+    /* Every signed-in account sees the whole fleet. Drivers used to see only
+       their own vehicle; the mobile app is now the fleet tracker and the
+       owner asked for every account to see everything in it. */
+    const visible = Object.values(all)
 
     const positions = visible.map((fix) => ({
       ...fix,

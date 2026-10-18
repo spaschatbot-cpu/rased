@@ -118,8 +118,8 @@ r = await call('/positions', { as: 'viewer' })
 check('viewer sees both vehicles', r.data.positions.length, 2)
 
 r = await call('/positions', { bearer: 'd1' })
-check('a driver sees only their own', r.data.positions.length, 1)
-check('and it is theirs', r.data.positions[0].vehicleId, v1)
+check('a driver sees the whole fleet too', r.data.positions.length, 2)
+check('their own vehicle among them', r.data.positions.some((p) => p.vehicleId === v1), true)
 
 /* ── derived fields ───────────────────────────────────────────── */
 r = await call('/positions', { as: 'ops' })

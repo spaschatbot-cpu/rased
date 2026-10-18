@@ -339,13 +339,14 @@ check('backwards range → 400', (await call(`/reports?from=${today}&to=2020-01-
 check('over-long range → 400', (await call('/reports?from=2020-01-01&to=2024-01-01', { as: 'admin' })).status, 400)
 
 /* ── driver scoping ───────────────────────────────────────────── */
-section('driver may only see their own vehicle')
+section('a driver sees the fleet but cannot change it')
 
 r = await call('/positions', { token: driverToken })
-ok('driver sees only their vehicle', r.data.positions?.every((p) => p.vehicleId === DRIVER_VEHICLE), `got ${r.data.positions?.length} rows`)
+ok('driver sees their vehicle on the live map', r.data.positions?.some((p) => p.vehicleId === DRIVER_VEHICLE), `got ${r.data.positions?.length} rows`)
 
-check('driver may not replay another vehicle → 403', (await call('/history?vehicle=2&date=' + today, { token: driverToken })).status, 403)
+check('driver may replay another vehicle', (await call('/history?vehicle=2&date=' + today, { token: driverToken })).status, 200)
 check('driver may replay their own', (await call(`/history?vehicle=${DRIVER_VEHICLE}&date=${today}`, { token: driverToken })).status, 200)
+check('driver may open another vehicle page', (await call('/asset?id=2', { token: driverToken })).status, 200)
 check('driver may not edit the registry → 403', (await call('/vehicles', { method: 'POST', token: driverToken, body: { plate: 'X', modelEn: 'X' } })).status, 403)
 
 r = await call('/alerts', { token: driverToken })
