@@ -66,40 +66,92 @@ class _VehiclesTabState extends State<VehiclesTab> {
               PageHeader(
                 icon: Icons.local_shipping_rounded,
                 title: tr('fleet.tab.vehicles'),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-                child: TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  style: const TextStyle(fontSize: 14),
-                  decoration: InputDecoration(
-                    fillColor: Palette.glass,
-                    hintText: tr('fleet.search'),
-                    hintStyle: TextStyle(fontSize: 13, color: Palette.muted),
-                    prefixIcon: Icon(Icons.search_rounded, color: Palette.muted),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Palette.glass,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Palette.glassEdge),
+                  ),
+                  child: Text(
+                    tr1('fleet.count', store.vehicles.length),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Palette.muted),
                   ),
                 ),
               ),
-              SizedBox(
-                height: 52,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+
+              /* أربع بطاقات للحالات: العدد بنظرة، واللمس يصفّي، واللمس ثانيةً يلغي */
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                child: Row(
                   children: [
-                    _Chip(
-                      label: '${tr('fleet.all')} ${store.vehicles.length}',
-                      tone: Palette.text,
-                      selected: _status == null,
-                      onTap: () => setState(() => _status = null),
+                    for (final (i, st) in fleetStatuses.indexed) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: _StatusTile(
+                          status: st,
+                          count: store.count(st),
+                          selected: _status == st,
+                          onTap: () => setState(() => _status = _status == st ? null : st),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                child: SizedBox(
+                  height: 46,
+                  child: TextField(
+                    controller: _search,
+                    onChanged: (_) => setState(() {}),
+                    style: const TextStyle(fontSize: 13.5),
+                    decoration: InputDecoration(
+                      fillColor: Palette.glass,
+                      hintText: tr('fleet.search'),
+                      hintStyle: TextStyle(fontSize: 12.5, color: Palette.muted),
+                      prefixIcon: Icon(Icons.search_rounded, size: 20, color: Palette.muted),
+                      suffixIcon: _search.text.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () => setState(_search.clear),
+                              icon: Icon(Icons.close_rounded, size: 18, color: Palette.muted),
+                            ),
+                      contentPadding: EdgeInsets.zero,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Palette.glassEdge),
+                      ),
                     ),
-                    for (final s in fleetStatuses)
-                      _Chip(
-                        label: '${tr('fleet.status.$s')} ${store.count(s)}',
-                        tone: statusColor(s),
-                        selected: _status == s,
-                        onTap: () => setState(() => _status = _status == s ? null : s),
+                  ),
+                ),
+              ),
+
+              /* سطر النتيجة: كم مركبة معروضة، وإلغاء التصفية إن وُجدت */
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
+                child: Row(
+                  children: [
+                    Text(
+                      _status == null
+                          ? tr('fleet.allVehicles')
+                          : tr('fleet.status.$_status'),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(width: 6),
+                    Text('(${rows.length})', style: TextStyle(fontSize: 12, color: Palette.muted)),
+                    const Spacer(),
+                    if (_status != null || _search.text.isNotEmpty)
+                      InkWell(
+                        onTap: () => setState(() {
+                          _status = null;
+                          _search.clear();
+                        }),
+                        child: Text(tr('fleet.clear'),
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w800, color: Brand.green)),
                       ),
                   ],
                 ),
@@ -179,68 +231,100 @@ class _VehicleTile extends StatelessWidget {
     final v = vehicle;
     final pos = v.position;
     final tone = statusColor(v.status);
+    final sub = [if (v.model.isNotEmpty) v.model, if (v.driver.isNotEmpty) v.driver].join('  ·  ');
 
     return Material(
       color: Palette.glass,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        side: BorderSide(color: Palette.glassEdge),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: IntrinsicHeight(
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.local_shipping_outlined, size: 20, color: tone),
-              ),
-              const SizedBox(width: 12),
+              /* شريط بلون الحالة على طرف البطاقة — يُقرأ قبل أي نص */
+              Container(width: 4, color: tone),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      v.plate,
-                      textDirection: TextDirection.ltr,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (v.model.isNotEmpty) v.model,
-                        v.driver.isEmpty ? tr('fleet.noDriver') : v.driver,
-                      ].join('  ·  '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11.5, color: Palette.muted),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 8, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: tone.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.local_shipping_rounded, size: 21, color: tone),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              v.plate,
+                              textDirection: TextDirection.ltr,
+                              style: const TextStyle(
+                                  fontSize: 15.5, fontWeight: FontWeight.w900, letterSpacing: 0.4),
+                            ),
+                            if (sub.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                sub,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11.5, color: Palette.muted),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          StatusPill(status: v.status),
+                          const SizedBox(height: 5),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                v.status == 'moving' ? Icons.speed_rounded : Icons.schedule_rounded,
+                                size: 12,
+                                color: Palette.muted,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                pos == null
+                                    ? tr('fleet.noSignal')
+                                    : v.status == 'moving'
+                                        ? '${pos.speed} ${tr('fleet.kmh')}'
+                                        : ageLabel(pos.ageSeconds),
+                                style: TextStyle(fontSize: 10.5, color: Palette.muted),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.chevron_left_rounded
+                            : Icons.chevron_right_rounded,
+                        color: Palette.muted,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  StatusPill(status: v.status),
-                  if (pos != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      v.status == 'moving'
-                          ? '${pos.speed} ${tr('fleet.kmh')}'
-                          : ageLabel(pos.ageSeconds),
-                      style: TextStyle(fontSize: 10.5, color: Palette.muted),
-                    ),
-                  ],
-                ],
               ),
             ],
           ),
@@ -250,41 +334,59 @@ class _VehicleTile extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.tone,
+/// بطاقة حالة: العدد كبيرًا بلونها، واسمها تحته.
+class _StatusTile extends StatelessWidget {
+  const _StatusTile({
+    required this.status,
+    required this.count,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
-  final Color tone;
+  final String status;
+  final int count;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 8),
+    final tone = statusColor(status);
+    return Material(
+      color: selected ? tone.withValues(alpha: 0.14) : Palette.glass,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: selected ? tone : Palette.glassEdge, width: selected ? 1.5 : 1),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? tone.withValues(alpha: 0.16) : Palette.glass,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: selected ? tone : Palette.border),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: selected ? tone : Palette.muted,
-            ),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            children: [
+              Text('$count',
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: tone)),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: tone, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      tr('fleet.status.$status'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Palette.muted),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
