@@ -122,6 +122,84 @@ class _DashboardTabState extends State<DashboardTab> {
     _load();
   }
 
+  String _fmt(DateTime d) => '${_two(d.day)}/${_two(d.month)}/${d.year}';
+
+  Future<void> _openRangeSheet() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Palette.panel,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Palette.border, borderRadius: BorderRadius.circular(99)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(tr('dash.range.pick'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 10),
+              for (final (p, icon) in [
+                ('today', Icons.today_rounded),
+                ('yesterday', Icons.history_toggle_off_rounded),
+                ('week', Icons.date_range_rounded),
+                ('month', Icons.calendar_view_month_rounded),
+                ('custom', Icons.edit_calendar_rounded),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Material(
+                    color: _preset == p ? Brand.green.withValues(alpha: 0.12) : Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: _preset == p ? Brand.green : Palette.border),
+                    ),
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context, p),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                        child: Row(
+                          children: [
+                            Icon(icon, size: 20, color: _preset == p ? Brand.green : Palette.muted),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(tr('dash.range.$p'),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: _preset == p ? Brand.green : Palette.text,
+                                  )),
+                            ),
+                            if (_preset == p) const Icon(Icons.check_circle_rounded, size: 20, color: Brand.green),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (choice == null) return;
+    if (choice == 'custom') {
+      await _pickRange();
+    } else {
+      _setPreset(choice);
+    }
+  }
+
   String get _greeting {
     final h = DateTime.now().toUtc().add(const Duration(hours: 3)).hour;
     return h < 12 ? tr('dash.morning') : tr('dash.evening');
@@ -175,28 +253,15 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
           ),
 
-          /* الفترة: اختصارات، ونطاق مخصّص من التقويم */
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                for (final p in ['today', 'yesterday', 'week', 'month'])
-                  _PresetChip(
-                    label: tr('dash.range.$p'),
-                    selected: _preset == p,
-                    onTap: () => _setPreset(p),
-                  ),
-                _PresetChip(
-                  label: _preset == 'custom'
-                      ? '${_from.day}/${_from.month} - ${_to.day}/${_to.month}'
-                      : tr('dash.range.custom'),
-                  icon: Icons.calendar_month_rounded,
-                  selected: _preset == 'custom',
-                  onTap: _pickRange,
-                ),
-              ],
+          /* الفترة: مربّع واحد يفتح قائمة الخيارات */
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: _RangeBox(
+              title: _preset == 'custom' ? tr('dash.range.custom') : tr('dash.range.$_preset'),
+              dates: _from == _to
+                  ? _fmt(_from)
+                  : '${_fmt(_from)}  —  ${_fmt(_to)}',
+              onTap: _openRangeSheet,
             ),
           ),
 
@@ -279,105 +344,22 @@ class _DashboardTabState extends State<DashboardTab> {
     final score = ((d['safety'] as Map<String, dynamic>?)?['score'] as num?)?.toInt();
     final (tone, grade) = _grade(score);
     final totals = (d['totals'] as Map<String, dynamic>?) ?? {};
-    final daily = ((d['daily'] as List?) ?? const []).cast<Map<String, dynamic>>();
-    final weekdays = MaterialLocalizations.of(context).narrowWeekdays;
+    final e = (d['events'] as Map<String, dynamic>?) ?? {};
+    int n(String k) => (e[k] as num?)?.toInt() ?? 0;
 
     return Column(
       children: [
-        /* درجة السلامة */
-        _Card(
-          child: Row(
-            children: [
-              SizedBox(
-                width: 112,
-                height: 112,
-                child: CustomPaint(
-                  painter: _Gauge(value: (score ?? 0) / 100, tone: tone, track: Palette.border),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(score == null ? '—' : '$score',
-                            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Palette.text)),
-                        Text('/ 100', style: TextStyle(fontSize: 11, color: Palette.muted)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(tr('dash.safety'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: tone.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(grade,
-                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: tone)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(tr('dash.safetyHint'),
-                        style: TextStyle(fontSize: 11, height: 1.5, color: Palette.muted)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        /* درجة كل يوم من الأيام السبعة */
-        _Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _CardTitle(icon: Icons.insights_rounded, title: tr('dash.daily')),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  for (final day in daily)
-                    Expanded(
-                      child: Builder(builder: (context) {
-                        final s = (day['score'] as num?)?.toInt();
-                        final (c, _) = _grade(s);
-                        final date = DateTime.parse('${day['date']}');
-                        final isLast = day == daily.last;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          child: Column(
-                            children: [
-                              Container(
-                                height: 40,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: c.withValues(alpha: s == null ? 0.08 : 0.16),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: isLast ? Border.all(color: c, width: 1.5) : null,
-                                ),
-                                child: Text(s == null ? '—' : '$s',
-                                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: c)),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(weekdays[date.weekday % 7],
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: isLast ? FontWeight.w900 : FontWeight.w600,
-                                      color: isLast ? Palette.text : Palette.muted)),
-                            ],
-                          ),
-                        );
-                      }),
-                    ),
-                ],
-              ),
-            ],
-          ),
+        /* درجة السلامة: نصف دائرة فوق، والدرجة والوصف تحتها، ثم ما أثّر فيها */
+        _SafetyCard(
+          score: score,
+          tone: tone,
+          grade: grade,
+          factors: [
+            (Icons.speed_rounded, tr('alert.speed'), n('speed')),
+            (Icons.hourglass_bottom_rounded, tr('alert.idle'), n('idle')),
+            (Icons.logout_rounded, tr('alert.geofenceOut'), n('geofenceOut')),
+            (Icons.sos_rounded, tr('alert.sos'), n('sos')),
+          ],
         ),
         const SizedBox(height: 12),
 
@@ -585,8 +567,9 @@ class _DashboardTabState extends State<DashboardTab> {
 
 /* ───────────────────────── أجزاء ───────────────────────── */
 
-class _Gauge extends CustomPainter {
-  _Gauge({required this.value, required this.tone, required this.track});
+/// نصف دائرة من اليسار إلى اليمين، تمتلئ بنسبة الدرجة.
+class _HalfGauge extends CustomPainter {
+  _HalfGauge({required this.value, required this.tone, required this.track});
 
   final double value;
   final Color tone;
@@ -594,26 +577,120 @@ class _Gauge extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 11.0;
-    final rect = Offset.zero & size;
-    final arc = rect.deflate(stroke / 2);
-    final base = Paint()
-      ..color = track
+    const stroke = 14.0;
+    final radius = math.min(size.width / 2, size.height) - stroke / 2;
+    final center = Offset(size.width / 2, size.height - stroke / 2);
+    final arc = Rect.fromCircle(center: center, radius: radius);
+    Paint pen(Color c) => Paint()
+      ..color = c
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(arc, 0, math.pi * 2, false, base);
-    if (value <= 0) return;
-    final fill = Paint()
-      ..color = tone
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(arc, -math.pi / 2, math.pi * 2 * value.clamp(0, 1), false, fill);
+    canvas.drawArc(arc, math.pi, math.pi, false, pen(track));
+    if (value > 0) canvas.drawArc(arc, math.pi, math.pi * value.clamp(0, 1), false, pen(tone));
   }
 
   @override
-  bool shouldRepaint(_Gauge old) => old.value != value || old.tone != tone || old.track != track;
+  bool shouldRepaint(_HalfGauge old) => old.value != value || old.tone != tone || old.track != track;
+}
+
+class _SafetyCard extends StatelessWidget {
+  const _SafetyCard({required this.score, required this.tone, required this.grade, required this.factors});
+
+  final int? score;
+  final Color tone;
+  final String grade;
+  final List<(IconData, String, int)> factors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [tone.withValues(alpha: 0.16), Palette.glass],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tone.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shield_rounded, size: 18, color: tone),
+              const SizedBox(width: 8),
+              Text(tr('dash.safety'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: tone.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(grade, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: tone)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: 200,
+            height: 104,
+            child: CustomPaint(
+              painter: _HalfGauge(value: (score ?? 0) / 100, tone: tone, track: Palette.border),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(score == null ? '—' : '$score',
+                        style: TextStyle(fontSize: 38, height: 1, fontWeight: FontWeight.w900, color: Palette.text)),
+                    const SizedBox(height: 2),
+                    Text(tr('dash.outOf'), style: TextStyle(fontSize: 11, color: Palette.muted)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(tr('dash.safetyHint'),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, height: 1.5, color: Palette.muted)),
+          const SizedBox(height: 14),
+
+          /* ما أثّر في الدرجة: أربعة أعداد متجاورة */
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: Palette.bg.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                for (final (i, f) in factors.indexed) ...[
+                  if (i > 0) Container(width: 1, height: 34, color: Palette.border),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Icon(f.$1, size: 16, color: f.$3 > 0 ? Brand.danger : Palette.muted),
+                        const SizedBox(height: 4),
+                        Text('${f.$3}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                        Text(f.$2,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 9.5, color: Palette.muted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Card extends StatelessWidget {
@@ -695,43 +772,67 @@ class _Kpi extends StatelessWidget {
   }
 }
 
-class _PresetChip extends StatelessWidget {
-  const _PresetChip({required this.label, required this.selected, required this.onTap, this.icon});
+/// مربّع الفترة: أيقونة التقويم، واسم الفترة وتواريخها، وسهم يدلّ أنه يُفتح.
+class _RangeBox extends StatelessWidget {
+  const _RangeBox({required this.title, required this.dates, required this.onTap});
 
-  final String label;
-  final bool selected;
+  final String title;
+  final String dates;
   final VoidCallback onTap;
-  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 8),
+    return Material(
+      color: Palette.glass,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Brand.green.withValues(alpha: 0.45), width: 1.2),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? Brand.green.withValues(alpha: 0.16) : Palette.glass,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: selected ? Brand.green : Palette.glassEdge),
-          ),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[
-                Icon(icon, size: 15, color: selected ? Brand.green : Palette.muted),
-                const SizedBox(width: 6),
-              ],
-              Text(label,
-                  textDirection: icon != null && selected ? TextDirection.ltr : null,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: selected ? Brand.green : Palette.muted,
-                  )),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Brand.green.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(Icons.calendar_month_rounded, size: 19, color: Brand.green),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    Text(dates,
+                        textDirection: TextDirection.ltr,
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Palette.muted)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Palette.bg.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.tune_rounded, size: 15, color: Palette.muted),
+                    const SizedBox(width: 4),
+                    Text(tr('dash.range.change'),
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Palette.muted)),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
