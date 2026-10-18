@@ -149,6 +149,11 @@ class ApiClient {
     return ((data['positions'] as List?) ?? const []).cast<Map<String, dynamic>>();
   }
 
+  /// لوحة التحكم لفترة: المؤشرات والأحداث والسلامة والأسطول.
+  Future<Map<String, dynamic>> dashboard(String token, String from, String to) {
+    return _send('GET', '/dashboard?from=$from&to=$to', token: token);
+  }
+
   /// صفحة المركبة كاملة: السجل والفرع والموقع والسائق ورحلات اليوم والتعيينات.
   Future<Map<String, dynamic>> asset(String token, int vehicleId) {
     return _send('GET', '/asset?id=$vehicleId', token: token);

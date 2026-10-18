@@ -5,13 +5,15 @@ import '../services/api_client.dart';
 import '../services/fleet_store.dart';
 import '../services/tracker.dart';
 import '../theme.dart';
+import '../widgets/fleet_widgets.dart';
 import '../widgets/stage_background.dart';
 import 'account_tab.dart';
+import 'dashboard_tab.dart';
 import 'history_tab.dart';
 import 'live_map_tab.dart';
 import 'vehicles_tab.dart';
 
-/// التطبيق كما يراه من سجّل الدخول: الخريطة، والمركبات، والمسارات، وحسابي.
+/// التطبيق كما يراه من سجّل الدخول: لوحة التحكم، والخريطة، والمركبات، والمسارات، وحسابي.
 ///
 /// شاشات السائق (الوردية وإرسال الموقع) مخفية حاليًا لا محذوفة — ما زالت في
 /// `HomeShell`، وإعادتها سطر واحد في main.dart.
@@ -51,12 +53,12 @@ class _TrackingShellState extends State<TrackingShell> {
   }
 
   void _showOnMap(int vehicleId) {
-    setState(() => _tab = _lastTab = 0);
+    setState(() => _tab = _lastTab = 1);
     _focus.value = vehicleId;
   }
 
   void _showHistory(int vehicleId) {
-    setState(() => _tab = _lastTab = 2);
+    setState(() => _tab = _lastTab = 3);
     _history.value = vehicleId;
   }
 
@@ -79,6 +81,20 @@ class _TrackingShellState extends State<TrackingShell> {
               child: IndexedStack(
                 index: _tab,
                 children: [
+                  DashboardTab(
+                    store: widget.fleet,
+                    api: widget.api,
+                    token: session.token,
+                    onOpenVehicle: (id) => showVehicleSheet(
+                      context,
+                      store: widget.fleet,
+                      vehicleId: id,
+                      api: widget.api,
+                      token: session.token,
+                      onShowOnMap: () => _showOnMap(id),
+                      onShowHistory: () => _showHistory(id),
+                    ),
+                  ),
                   LiveMapTab(
                     store: widget.fleet,
                     api: widget.api,
@@ -201,6 +217,7 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
+      (Icons.space_dashboard_outlined, Icons.space_dashboard_rounded, 'fleet.tab.dashboard'),
       (Icons.map_outlined, Icons.map_rounded, 'fleet.tab.map'),
       (Icons.local_shipping_outlined, Icons.local_shipping_rounded, 'fleet.tab.vehicles'),
       (Icons.history_rounded, Icons.history_rounded, 'fleet.tab.history'),

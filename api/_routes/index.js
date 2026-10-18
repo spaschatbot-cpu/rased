@@ -30,6 +30,7 @@
 import alertRules from './alert-rules.js'
 import alerts from './alerts.js'
 import asset from './asset.js'
+import dashboard from './dashboard.js'
 import devices from './devices.js'
 import geocode from './geocode.js'
 import geofences from './geofences.js'
@@ -56,6 +57,7 @@ export const ROUTES = {
   'alert-rules': alertRules,
   alerts,
   asset,
+  dashboard,
   devices,
   geocode,
   geofences,
