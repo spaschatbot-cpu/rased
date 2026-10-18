@@ -36,7 +36,7 @@ String _pick(Map<String, dynamic>? m, String ar, String en) {
 }
 
 /// صفحة المركبة: بطاقة الهوية، ثم تبويبات النظرة العامة والرحلات والسائق
-/// وسجل التعيينات والتفاصيل. تُحدَّث كل خمس ثوانٍ ما دامت مفتوحة.
+/// والتفاصيل. تُحدَّث كل خمس ثوانٍ ما دامت مفتوحة.
 class VehicleDetailsScreen extends StatefulWidget {
   const VehicleDetailsScreen({
     super.key,
@@ -101,7 +101,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       tr('vd.tab.overview'),
       tr('vd.tab.trips'),
       tr('vd.tab.driver'),
-      tr('vd.tab.assignments'),
       tr('vd.tab.details'),
     ];
 
@@ -144,7 +143,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                     0 => _overview(),
                     1 => _trips(),
                     2 => _driverTab(),
-                    3 => _assignments(),
                     _ => _details(),
                   },
                 ],
@@ -447,56 +445,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               label: Text(tr('vd.call')),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  /* ───────────────────────── سجل التعيينات ───────────────────────── */
-
-  Widget _assignments() {
-    final rows = ((_data?['assignments'] as List?) ?? const []).cast<Map<String, dynamic>>();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          if (rows.isEmpty)
-            _Panel(
-              child: Text(tr('vd.noAssignments'),
-                  textAlign: TextAlign.center, style: TextStyle(color: Palette.muted)),
-            )
-          else
-            for (final r in rows)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _Panel(
-                  child: Row(
-                    children: [
-                      Icon(
-                        r['action'] == 'assigned' ? Icons.person_add_alt_1_rounded : Icons.person_remove_rounded,
-                        color: r['action'] == 'assigned' ? Brand.green : Brand.danger,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_pick(r, 'nameAr', 'nameEn'),
-                                style: const TextStyle(fontWeight: FontWeight.w900)),
-                            Text(
-                              r['action'] == 'assigned' ? tr('vd.assigned') : tr('vd.unassigned'),
-                              style: TextStyle(fontSize: 11.5, color: Palette.muted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text('${_date(r['at'] as String?)}\n${_clock(r['at'] as String?)}',
-                          textAlign: TextAlign.end,
-                          style: TextStyle(fontSize: 11, color: Palette.muted)),
-                    ],
-                  ),
-                ),
-              ),
         ],
       ),
     );
