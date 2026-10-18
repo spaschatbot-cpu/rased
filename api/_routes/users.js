@@ -13,6 +13,7 @@ import { requireUser } from '../_lib/auth.js'
 import { hashPassword } from '../_lib/crypto.js'
 import { ROLES, allUsers, canManageUsers, publicUser, saveUsers } from '../_lib/users.js'
 import { cleanPages, pagesFor } from '../../shared/app-pages.js'
+import { noteAssignmentChange } from '../_lib/assignments.js'
 
 const MIN_PASSWORD = 6
 
@@ -110,6 +111,7 @@ export default handler({
       lastLoginAt: null,
     }
     await saveUsers([...list, user])
+    await noteAssignmentChange(user, null, user.vehicleId, caller.u)
     return ok(res, { ok: true, user: publicUser(user) })
   },
 
@@ -147,8 +149,10 @@ export default handler({
       return fail(res, 403, 'you cannot revoke your own management access')
     }
 
+    const before = list[i].vehicleId
     list[i] = updated
     await saveUsers(list)
+    await noteAssignmentChange(updated, before, updated.vehicleId, caller.u)
     return ok(res, { ok: true, user: publicUser(updated) })
   },
 
@@ -167,6 +171,7 @@ export default handler({
     }
 
     await saveUsers(list.filter((u) => u.id !== id))
+    await noteAssignmentChange(target, target.vehicleId, null, caller.u)
     return ok(res, { ok: true })
   },
 })

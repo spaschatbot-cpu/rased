@@ -149,6 +149,11 @@ class ApiClient {
     return ((data['positions'] as List?) ?? const []).cast<Map<String, dynamic>>();
   }
 
+  /// صفحة المركبة كاملة: السجل والفرع والموقع والسائق ورحلات اليوم والتعيينات.
+  Future<Map<String, dynamic>> asset(String token, int vehicleId) {
+    return _send('GET', '/asset?id=$vehicleId', token: token);
+  }
+
   /// مسار مركبة في يوم: النقاط والرحلات والوقفات والإجماليات.
   Future<Map<String, dynamic>> historyDay(String token, int vehicleId, String date) {
     return _send('GET', '/history?vehicle=$vehicleId&date=$date', token: token);

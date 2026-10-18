@@ -71,6 +71,10 @@ export function validate(body) {
       temperature: body.temperature == null ? null : num(body.temperature, -60, 100),
       humidity: body.humidity == null ? null : Math.round(num(body.humidity, 0, 100)),
       sos: body.sos === true,
+      /* hardware trackers only — a phone has no ignition line or supply. `null`
+         means "not reported", which the vehicle page tells apart from "off" */
+      ignition: typeof body.ignition === 'boolean' ? body.ignition : null,
+      power: body.power == null ? null : Number(num(body.power, 0, 60).toFixed(1)),
       /* the device's own clock is not trusted for ordering, only recorded */
       deviceAt: typeof body.at === 'string' ? body.at.slice(0, 40) : null,
     },

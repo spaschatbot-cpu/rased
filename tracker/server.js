@@ -34,6 +34,14 @@ const MAX_BUFFER = 512 * 1024
 
 const log = (...a) => console.log(new Date().toISOString(), ...a)
 
+function ioFields(el) {
+  if (!el) return {}
+  const out = {}
+  if (el[239] != null) out.ignition = Number(el[239]) === 1
+  if (el[66] != null) out.power = Number(el[66]) / 1000
+  return out
+}
+
 async function post(imei, records) {
   const points = records.map((r) => ({
     lat: r.lat,
@@ -43,6 +51,9 @@ async function post(imei, records) {
     /* the device reports satellites, not an error radius; a fix with none is
        not a fix, and the API's own validation drops the impossible ones */
     accuracy: r.satellites > 0 ? Math.max(5, 50 - r.satellites * 3) : 9999,
+    /* Teltonika IO 239 is the ignition line and IO 66 the external supply in
+       millivolts. Either is absent when the device is not configured to send it */
+    ...ioFields(r.io?.elements),
     at: r.at,
   }))
 
