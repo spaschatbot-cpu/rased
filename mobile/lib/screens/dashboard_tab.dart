@@ -127,67 +127,73 @@ class _DashboardTabState extends State<DashboardTab> {
   Future<void> _openRangeSheet() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Palette.panel,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: Palette.border, borderRadius: BorderRadius.circular(99)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: Palette.border, borderRadius: BorderRadius.circular(99)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Text(tr('dash.range.pick'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 10),
-              for (final (p, icon) in [
-                ('today', Icons.today_rounded),
-                ('yesterday', Icons.history_toggle_off_rounded),
-                ('week', Icons.date_range_rounded),
-                ('month', Icons.calendar_view_month_rounded),
-                ('custom', Icons.edit_calendar_rounded),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Material(
-                    color: _preset == p ? Brand.green.withValues(alpha: 0.12) : Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(color: _preset == p ? Brand.green : Palette.border),
-                    ),
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context, p),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                        child: Row(
-                          children: [
-                            Icon(icon, size: 20, color: _preset == p ? Brand.green : Palette.muted),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(tr('dash.range.$p'),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: _preset == p ? Brand.green : Palette.text,
-                                  )),
-                            ),
-                            if (_preset == p) const Icon(Icons.check_circle_rounded, size: 20, color: Brand.green),
-                          ],
+                const SizedBox(height: 14),
+                Text(tr('dash.range.pick'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 10),
+                for (final (p, icon) in [
+                  ('today', Icons.today_rounded),
+                  ('yesterday', Icons.history_toggle_off_rounded),
+                  ('week', Icons.date_range_rounded),
+                  ('month', Icons.calendar_view_month_rounded),
+                  ('custom', Icons.edit_calendar_rounded),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Material(
+                      color: _preset == p ? Brand.green.withValues(alpha: 0.12) : Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(color: _preset == p ? Brand.green : Palette.border),
+                      ),
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context, p),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                          child: Row(
+                            children: [
+                              Icon(icon, size: 20, color: _preset == p ? Brand.green : Palette.muted),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(tr('dash.range.$p'),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: _preset == p ? Brand.green : Palette.text,
+                                    )),
+                              ),
+                              if (_preset == p)
+                                const Icon(Icons.check_circle_rounded, size: 20, color: Brand.green),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -258,13 +264,10 @@ class _DashboardTabState extends State<DashboardTab> {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: _RangeBox(
               title: _preset == 'custom' ? tr('dash.range.custom') : tr('dash.range.$_preset'),
-              dates: _from == _to
-                  ? _fmt(_from)
-                  : '${_fmt(_from)}  —  ${_fmt(_to)}',
+              dates: _from == _to ? _fmt(_from) : '${_fmt(_from)}  —  ${_fmt(_to)}',
               onTap: _openRangeSheet,
             ),
           ),
-
           if (_error != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -305,7 +308,6 @@ class _DashboardTabState extends State<DashboardTab> {
               ],
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: _Segments(
@@ -318,7 +320,6 @@ class _DashboardTabState extends State<DashboardTab> {
               onChanged: (i) => setState(() => _section = i),
             ),
           ),
-
           if (d == null)
             const Padding(
               padding: EdgeInsets.only(top: 40),
@@ -365,11 +366,13 @@ class _DashboardTabState extends State<DashboardTab> {
 
         /* إجماليات الفترة */
         _Grid(cells: [
-          _Cell(Icons.route_rounded, Brand.green, tr('hist.distance'), '${totals['distanceKm'] ?? 0}', tr('hist.km')),
+          _Cell(Icons.route_rounded, Brand.green, tr('hist.distance'), '${totals['distanceKm'] ?? 0}',
+              tr('hist.km')),
           _Cell(Icons.timer_rounded, const Color(0xFF38BDF8), tr('dash.driving'),
               _hours((totals['drivingMin'] as num?) ?? 0), ''),
           _Cell(Icons.flag_rounded, const Color(0xFFA78BFA), tr('hist.trips'), '${totals['trips'] ?? 0}', ''),
-          _Cell(Icons.speed_rounded, Brand.warn, tr('hist.maxSpeed'), '${totals['maxSpeed'] ?? 0}', tr('fleet.kmh')),
+          _Cell(Icons.speed_rounded, Brand.warn, tr('hist.maxSpeed'), '${totals['maxSpeed'] ?? 0}',
+              tr('fleet.kmh')),
         ]),
       ],
     );
@@ -386,14 +389,15 @@ class _DashboardTabState extends State<DashboardTab> {
       children: [
         _Grid(cells: [
           _Cell(Icons.speed_rounded, Brand.danger, tr('alert.speed'), '${n('speed')}', tr('dash.events')),
-          _Cell(Icons.hourglass_bottom_rounded, Brand.warn, tr('alert.idle'), '${n('idle')}', tr('dash.events')),
+          _Cell(Icons.hourglass_bottom_rounded, Brand.warn, tr('alert.idle'), '${n('idle')}',
+              tr('dash.events')),
           _Cell(Icons.logout_rounded, const Color(0xFFF97316), tr('alert.geofenceOut'), '${n('geofenceOut')}',
               tr('dash.events')),
           _Cell(Icons.login_rounded, const Color(0xFF38BDF8), tr('alert.geofenceIn'), '${n('geofenceIn')}',
               tr('dash.events')),
           _Cell(Icons.sos_rounded, Brand.danger, tr('alert.sos'), '${n('sos')}', tr('dash.events')),
-          _Cell(Icons.battery_alert_rounded, Brand.warn, tr('dash.battery'), '${n('lowBattery') + n('power')}',
-              tr('dash.events')),
+          _Cell(Icons.battery_alert_rounded, Brand.warn, tr('dash.battery'),
+              '${n('lowBattery') + n('power')}', tr('dash.events')),
           _Cell(Icons.local_parking_rounded, const Color(0xFFA78BFA), tr('dash.stopTime'),
               _hours((totals['idleMin'] as num?) ?? 0), ''),
           _Cell(Icons.trending_up_rounded, Brand.green, tr('dash.avgSpeed'), '${totals['avgSpeed'] ?? 0}',
@@ -461,7 +465,8 @@ class _DashboardTabState extends State<DashboardTab> {
                       child: Column(
                         children: [
                           Text('${status[k] ?? 0}',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: statusColor(k))),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w900, color: statusColor(k))),
                           Text(tr('fleet.status.$k'), style: TextStyle(fontSize: 10.5, color: Palette.muted)),
                         ],
                       ),
@@ -605,77 +610,89 @@ class _SafetyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: AlignmentDirectional.centerStart,
+          end: AlignmentDirectional.centerEnd,
           colors: [tone.withValues(alpha: 0.16), Palette.glass],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: tone.withValues(alpha: 0.35)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.shield_rounded, size: 18, color: tone),
-              const SizedBox(width: 8),
-              Text(tr('dash.safety'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(999),
+              /* نصف الدائرة صغيرة على الطرف، والرقم داخلها */
+              SizedBox(
+                width: 112,
+                height: 62,
+                child: CustomPaint(
+                  painter: _HalfGauge(value: (score ?? 0) / 100, tone: tone, track: Palette.border),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Text(score == null ? '—' : '$score',
+                        style: TextStyle(
+                            fontSize: 26, height: 1, fontWeight: FontWeight.w900, color: Palette.text)),
+                  ),
                 ),
-                child: Text(grade, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: tone)),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: 200,
-            height: 104,
-            child: CustomPaint(
-              painter: _HalfGauge(value: (score ?? 0) / 100, tone: tone, track: Palette.border),
-              child: Align(
-                alignment: Alignment.bottomCenter,
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(score == null ? '—' : '$score',
-                        style: TextStyle(fontSize: 38, height: 1, fontWeight: FontWeight.w900, color: Palette.text)),
-                    const SizedBox(height: 2),
-                    Text(tr('dash.outOf'), style: TextStyle(fontSize: 11, color: Palette.muted)),
+                    Row(
+                      children: [
+                        Icon(Icons.shield_rounded, size: 16, color: tone),
+                        const SizedBox(width: 6),
+                        Text(tr('dash.safety'),
+                            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: tone.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(grade,
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: tone)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(tr('dash.outOf'), style: TextStyle(fontSize: 10.5, color: Palette.muted)),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
           const SizedBox(height: 10),
-          Text(tr('dash.safetyHint'),
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, height: 1.5, color: Palette.muted)),
-          const SizedBox(height: 14),
 
-          /* ما أثّر في الدرجة: أربعة أعداد متجاورة */
+          /* ما أثّر في الدرجة: سطر واحد */
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(vertical: 7),
             decoration: BoxDecoration(
               color: Palette.bg.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 for (final (i, f) in factors.indexed) ...[
-                  if (i > 0) Container(width: 1, height: 34, color: Palette.border),
+                  if (i > 0) Container(width: 1, height: 26, color: Palette.border),
                   Expanded(
                     child: Column(
                       children: [
-                        Icon(f.$1, size: 16, color: f.$3 > 0 ? Brand.danger : Palette.muted),
-                        const SizedBox(height: 4),
-                        Text('${f.$3}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(f.$1, size: 13, color: f.$3 > 0 ? Brand.danger : Palette.muted),
+                            const SizedBox(width: 4),
+                            Text('${f.$3}',
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900)),
+                          ],
+                        ),
                         Text(f.$2,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -962,7 +979,8 @@ class _Grid extends StatelessWidget {
                           child: Text(c.value,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Palette.text)),
+                              style:
+                                  TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Palette.text)),
                         ),
                         if (c.unit.isNotEmpty) ...[
                           const SizedBox(width: 4),
