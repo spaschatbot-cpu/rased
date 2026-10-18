@@ -248,51 +248,39 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _Metric(
-                  icon: Icons.power_settings_new_rounded,
-                  label: tr('vd.ignition'),
-                  value: ignitionOn ? tr('vd.on') : tr('vd.off'),
-                  tone: ignitionOn ? Brand.green : Brand.danger,
-                  note: ignition == null && pos != null ? tr('vd.inferred') : null,
-                ),
+
+          /* أربع قراءات في بطاقة واحدة مقسومة بالتساوي — الخلايا بالمقاس نفسه
+             مهما طال نصّ إحداها */
+          _MetricGrid(
+            cells: [
+              _MetricCell(
+                icon: Icons.power_settings_new_rounded,
+                label: tr('vd.ignition'),
+                value: ignitionOn ? tr('vd.on') : tr('vd.off'),
+                tone: ignitionOn ? Brand.green : Brand.danger,
+                note: ignition == null && pos != null ? tr('vd.inferred') : null,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _Metric(
-                  icon: Icons.speed_rounded,
-                  label: tr('fleet.speed'),
-                  value: '$speed ${tr('fleet.kmh')}',
-                  tone: const Color(0xFF38BDF8),
-                ),
+              _MetricCell(
+                icon: Icons.speed_rounded,
+                label: tr('fleet.speed'),
+                value: '$speed ${tr('fleet.kmh')}',
+                tone: const Color(0xFF38BDF8),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _Metric(
-                  icon: Icons.route_rounded,
-                  label: tr('vd.todayDistance'),
-                  value: '${stats['totalDistance'] ?? 0} ${tr('hist.km')}',
-                  tone: Brand.green,
-                ),
+              _MetricCell(
+                icon: Icons.route_rounded,
+                label: tr('vd.todayDistance'),
+                value: '${stats['totalDistance'] ?? 0} ${tr('hist.km')}',
+                tone: Brand.green,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _Metric(
-                  icon: power != null ? Icons.electrical_services_rounded : Icons.battery_std_rounded,
-                  label: power != null ? tr('vd.power') : tr('fleet.battery'),
-                  value: power != null
-                      ? '${power.toStringAsFixed(1)} V'
-                      : battery != null
-                          ? '$battery%'
-                          : '—',
-                  tone: Brand.warn,
-                ),
+              _MetricCell(
+                icon: power != null ? Icons.electrical_services_rounded : Icons.battery_std_rounded,
+                label: power != null ? tr('vd.power') : tr('fleet.battery'),
+                value: power != null
+                    ? '${power.toStringAsFixed(1)} V'
+                    : battery != null
+                        ? '$battery%'
+                        : '—',
+                tone: Brand.warn,
               ),
             ],
           ),
@@ -888,8 +876,8 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric({
+class _MetricCell {
+  const _MetricCell({
     required this.icon,
     required this.label,
     required this.value,
@@ -902,36 +890,78 @@ class _Metric extends StatelessWidget {
   final String value;
   final Color tone;
   final String? note;
+}
+
+/// شبكة ٢×٢ داخل بطاقة واحدة، تفصل خلاياها خطوط رفيعة.
+class _MetricGrid extends StatelessWidget {
+  const _MetricGrid({required this.cells});
+
+  final List<_MetricCell> cells;
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    Widget cell(_MetricCell c) => Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.13),
-                  shape: BoxShape.circle,
+                  color: c.tone.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 17, color: tone),
+                child: Icon(c.icon, size: 20, color: c.tone),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Palette.muted)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(c.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11, color: Palette.muted)),
+                    const SizedBox(height: 2),
+                    Text(c.value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: c.tone)),
+                    /* السطر محجوز دائمًا، فلا تطول خلية عن جارتها حين يظهر */
+                    Text(c.note ?? ' ',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 9.5, color: Palette.muted)),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: tone)),
-          if (note != null) Text(note!, style: TextStyle(fontSize: 10, color: Palette.muted)),
+        );
+
+    Widget row(int a, int b) => IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cell(cells[a])),
+              VerticalDivider(width: 1, thickness: 1, color: Palette.border),
+              Expanded(child: cell(cells[b])),
+            ],
+          ),
+        );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Palette.panel,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Palette.border),
+      ),
+      child: Column(
+        children: [
+          row(0, 1),
+          Divider(height: 1, thickness: 1, color: Palette.border),
+          row(2, 3),
         ],
       ),
     );
