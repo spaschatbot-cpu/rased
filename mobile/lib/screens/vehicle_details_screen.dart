@@ -92,14 +92,13 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
 
   Map<String, dynamic> get _vehicle => (_data?['vehicle'] as Map<String, dynamic>?) ?? {};
   Map<String, dynamic>? get _position => _data?['position'] as Map<String, dynamic>?;
-  Map<String, dynamic>? get _driver => _data?['driver'] as Map<String, dynamic>?;
 
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      tr('vd.tab.overview'),
-      tr('vd.tab.trips'),
-      tr('vd.tab.details'),
+      (Icons.dashboard_rounded, tr('vd.tab.overview')),
+      (Icons.route_rounded, tr('vd.tab.trips')),
+      (Icons.info_rounded, tr('vd.tab.details')),
     ];
 
     return Scaffold(
@@ -134,9 +133,9 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                           style: const TextStyle(
                               fontSize: 11.5, fontWeight: FontWeight.w700, color: Brand.danger)),
                     ),
-                  _HeaderCard(vehicle: _vehicle, position: _position, driver: _driver),
-                  _Tabs(labels: tabs, index: _tab, onChanged: (i) => setState(() => _tab = i)),
-                  const SizedBox(height: 12),
+                  _HeaderCard(vehicle: _vehicle, position: _position),
+                  _Tabs(items: tabs, index: _tab, onChanged: (i) => setState(() => _tab = i)),
+                  const SizedBox(height: 16),
                   switch (_tab) {
                     0 => _overview(),
                     1 => _trips(),
@@ -393,26 +392,54 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     final group = _data?['group'] as Map<String, dynamic>?;
     String val(Object? x) => x == null || '$x'.trim().isEmpty ? '—' : '$x';
     final expiry = v['simExpiry'] as String?;
-    final expired = expiry != null && (DateTime.tryParse(expiry)?.isBefore(DateTime.now()) ?? false);
+    final expiryAt = expiry == null ? null : DateTime.tryParse(expiry);
+    /* تاريخ قبل 2000 ليس تاريخًا: هو الصفر الذي يُكتب حين لا يُدخَل شيء */
+    final expiryKnown = expiryAt != null && expiryAt.year > 2000;
+    final expired = expiryKnown && expiryAt.isBefore(DateTime.now());
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          _Field(label: tr('vd.plate'), value: val(v['plate']), ltr: true),
-          _Field(label: tr('fleet.model'), value: val(_pick(v, 'modelAr', 'modelEn'))),
-          _Field(label: tr('vd.branch'), value: val(_pick(group, 'nameAr', 'nameEn'))),
-          _Field(label: tr('fleet.imei'), value: val(v['imei']), ltr: true),
-          _Field(label: tr('vd.sim'), value: val(v['sim']), ltr: true),
-          _Field(
-            label: tr('vd.simExpiry'),
-            value: expiry == null ? '—' : _date(expiry),
-            tone: expired ? Brand.danger : null,
+          _Section(
+            icon: Icons.directions_car_filled_rounded,
+            title: tr('vd.sec.vehicle'),
+            rows: [
+              _Row(Icons.pin_rounded, tr('vd.plate'), val(v['plate']), ltr: true),
+              _Row(Icons.local_shipping_outlined, tr('fleet.model'), val(_pick(v, 'modelAr', 'modelEn'))),
+              _Row(Icons.account_tree_outlined, tr('vd.branch'), val(_pick(group, 'nameAr', 'nameEn'))),
+              _Row(Icons.event_available_rounded, tr('vd.createdAt'), _date(v['createdAt'] as String?)),
+            ],
           ),
-          _Field(label: tr('vd.odometer'), value: '${val(v['odometer'])} ${tr('hist.km')}'),
-          _Field(label: tr('vd.engineHours'), value: '${val(v['engineHours'])} ${tr('hist.h')}'),
-          _Field(label: tr('vd.speedLimit'), value: '${val(v['speedLimit'])} ${tr('fleet.kmh')}'),
-          _Field(label: tr('vd.createdAt'), value: _date(v['createdAt'] as String?)),
+          const SizedBox(height: 14),
+          _Section(
+            icon: Icons.router_rounded,
+            title: tr('vd.sec.device'),
+            rows: [
+              _Row(Icons.memory_rounded, tr('fleet.imei'), val(v['imei']), ltr: true),
+              _Row(Icons.sim_card_outlined, tr('vd.sim'), val(v['sim']), ltr: true),
+              _Row(
+                Icons.event_busy_rounded,
+                tr('vd.simExpiry'),
+                expiryKnown ? _date(expiry) : tr('vd.notSet'),
+                badge: !expiryKnown
+                    ? null
+                    : expired
+                        ? (tr('vd.expired'), Brand.danger)
+                        : (tr('vd.valid'), Brand.green),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _Section(
+            icon: Icons.speed_rounded,
+            title: tr('vd.sec.usage'),
+            rows: [
+              _Row(Icons.route_outlined, tr('vd.odometer'), '${val(v['odometer'])} ${tr('hist.km')}'),
+              _Row(Icons.timer_outlined, tr('vd.engineHours'), '${val(v['engineHours'])} ${tr('hist.h')}'),
+              _Row(Icons.speed_outlined, tr('vd.speedLimit'), '${val(v['speedLimit'])} ${tr('fleet.kmh')}'),
+            ],
+          ),
         ],
       ),
     );
@@ -422,18 +449,15 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
 /* ───────────────────────── بطاقة الهوية ───────────────────────── */
 
 class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.vehicle, required this.position, required this.driver});
+  const _HeaderCard({required this.vehicle, required this.position});
 
   final Map<String, dynamic> vehicle;
   final Map<String, dynamic>? position;
-  final Map<String, dynamic>? driver;
 
   @override
   Widget build(BuildContext context) {
     final status = '${position?['status'] ?? 'offline'}';
     final plate = '${vehicle['plate'] ?? ''}';
-    final name = _pick(driver, 'nameAr', 'nameEn');
-    final phone = '${driver?['phone'] ?? ''}'.trim();
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -465,29 +489,6 @@ class _HeaderCard extends StatelessWidget {
               ],
             ),
           ),
-          if (name.isNotEmpty) ...[
-            const SizedBox(width: 10),
-            SizedBox(
-              width: 82,
-              child: Column(
-                children: [
-                  _Avatar(name: name, size: 40),
-                  const SizedBox(height: 4),
-                  Text(name,
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                  if (phone.isNotEmpty)
-                    Text(phone,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textDirection: TextDirection.ltr,
-                        style: TextStyle(fontSize: 9.5, color: Palette.muted)),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -573,73 +574,92 @@ class SaudiPlate extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, required this.size});
-
-  final String name;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final initials = parts.isEmpty ? '؟' : parts.take(2).map((p) => p.substring(0, 1)).join();
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Brand.green, Color(0xFF00A87C)]),
-        shape: BoxShape.circle,
-      ),
-      child: Text(initials,
-          style: TextStyle(fontSize: size * 0.34, fontWeight: FontWeight.w900, color: Brand.onGreen)),
-    );
-  }
-}
-
 /* ───────────────────────── أجزاء صغيرة ───────────────────────── */
 
+/// ثلاثة أجزاء متساوية بعرض الصفحة. المختار يمتلئ بالأخضر، والانتقال بينها
+/// ينزلق بدل أن يقفز.
 class _Tabs extends StatelessWidget {
-  const _Tabs({required this.labels, required this.index, required this.onChanged});
+  const _Tabs({required this.items, required this.index, required this.onChanged});
 
-  final List<String> labels;
+  final List<(IconData, String)> items;
   final int index;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 46,
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Palette.border))),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        children: [
-          for (var i = 0; i < labels.length; i++)
-            InkWell(
-              onTap: () => onChanged(i),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: i == index ? Brand.green : Colors.transparent,
-                      width: 2.5,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Palette.panel,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Palette.border),
+      ),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final width = box.maxWidth / items.length;
+          final rtl = Directionality.of(context) == TextDirection.rtl;
+          return SizedBox(
+            height: 46,
+            child: Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  top: 0,
+                  bottom: 0,
+                  left: rtl ? null : width * index,
+                  right: rtl ? width * index : null,
+                  width: width,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Brand.green, Color(0xFF00A87C)]),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Brand.green.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                child: Text(
-                  labels[i],
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: i == index ? FontWeight.w900 : FontWeight.w700,
-                    color: i == index ? Palette.text : Palette.muted,
-                  ),
+                Row(
+                  children: [
+                    for (var i = 0; i < items.length; i++)
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => onChanged(i),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(items[i].$1,
+                                  size: 17, color: i == index ? Brand.onGreen : Palette.muted),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  items[i].$2,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w900,
+                                    color: i == index ? Brand.onGreen : Palette.muted,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
+              ],
             ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -909,36 +929,91 @@ class _Mini extends StatelessWidget {
   }
 }
 
-class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.value, this.ltr = false, this.tone});
+/// صفّ في بطاقة التفاصيل: أيقونة، ثم العنوان، ثم القيمة وشارة اختيارية.
+class _Row {
+  const _Row(this.icon, this.label, this.value, {this.ltr = false, this.badge});
 
+  final IconData icon;
   final String label;
   final String value;
   final bool ltr;
-  final Color? tone;
+  final (String, Color)? badge;
+}
+
+/// بطاقة مجموعة: عنوان بأيقونة، وصفوف بفواصل رفيعة بينها.
+class _Section extends StatelessWidget {
+  const _Section({required this.icon, required this.title, required this.rows});
+
+  final IconData icon;
+  final String title;
+  final List<_Row> rows;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
         color: Palette.panel,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Palette.border),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Text(label, style: TextStyle(fontSize: 12.5, color: Palette.muted)),
-          const Spacer(),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              textDirection: ltr ? TextDirection.ltr : null,
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: tone ?? Palette.text),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Brand.green.withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon, size: 17, color: Brand.green),
+                ),
+                const SizedBox(width: 10),
+                Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900)),
+              ],
             ),
           ),
+          for (var i = 0; i < rows.length; i++) ...[
+            Divider(height: 1, thickness: 1, color: Palette.border, indent: 14, endIndent: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  Icon(rows[i].icon, size: 18, color: Palette.muted),
+                  const SizedBox(width: 10),
+                  Text(rows[i].label, style: TextStyle(fontSize: 12.5, color: Palette.muted)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      rows[i].value,
+                      textAlign: TextAlign.end,
+                      textDirection: rows[i].ltr ? TextDirection.ltr : null,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  if (rows[i].badge != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: rows[i].badge!.$2.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(rows[i].badge!.$1,
+                          style: TextStyle(
+                              fontSize: 10.5, fontWeight: FontWeight.w900, color: rows[i].badge!.$2)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
         ],
       ),
     );
