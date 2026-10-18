@@ -153,7 +153,7 @@ class _HistoryTabState extends State<HistoryTab> {
     try {
       final day = await widget.api.historyDay(widget.token, id, _date);
       if (!mounted || _vehicleId != id) return;
-      final pts = ((day['points'] as List?) ?? const []).cast<Map<String, dynamic>>();
+      final pts = ((day['points'] as List?) ?? []).cast<Map<String, dynamic>>();
       setState(() {
         _points = [
           for (final p in pts)
@@ -163,11 +163,11 @@ class _HistoryTabState extends State<HistoryTab> {
               '${p['at']}',
             ),
         ];
-        _trips = ((day['trips'] as List?) ?? const [])
+        _trips = ((day['trips'] as List?) ?? [])
             .cast<Map<String, dynamic>>()
             .map(_Segment.fromJson)
             .toList();
-        _stops = ((day['stops'] as List?) ?? const [])
+        _stops = ((day['stops'] as List?) ?? [])
             .cast<Map<String, dynamic>>()
             .map(_Segment.fromJson)
             .toList();
@@ -223,7 +223,7 @@ class _HistoryTabState extends State<HistoryTab> {
     final vehicles = widget.store.vehicles;
     final id = await showModalBottomSheet<int>(
       context: context,
-      backgroundColor: Brand.panel,
+      backgroundColor: Palette.panel,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
@@ -250,7 +250,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   subtitle: Text(
                     [if (v.model.isNotEmpty) v.model, if (v.driver.isNotEmpty) v.driver]
                         .join('  ·  '),
-                    style: const TextStyle(fontSize: 11.5, color: Brand.muted),
+                    style: TextStyle(fontSize: 11.5, color: Palette.muted),
                   ),
                   trailing: v.id == _vehicleId
                       ? const Icon(Icons.check_rounded, color: Brand.green)
@@ -451,7 +451,7 @@ class _HistoryTabState extends State<HistoryTab> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Brand.border),
+                        border: Border.all(color: Palette.border),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text('${_speed}x',
@@ -466,7 +466,7 @@ class _HistoryTabState extends State<HistoryTab> {
           if (current != null && _points.length > 1)
             Text(
               '${_clock(current.at)}  ·  ${current.speed} ${tr('fleet.kmh')}',
-              style: const TextStyle(fontSize: 11.5, color: Brand.muted),
+              style: TextStyle(fontSize: 11.5, color: Palette.muted),
             ),
 
           /* الرحلات والوقفات */
@@ -542,7 +542,7 @@ class _FilterBar extends StatelessWidget {
             ? tr('hist.yesterday')
             : loc.formatMediumDate(DateTime.parse(date));
     final v = vehicle;
-    final tone = v == null ? Brand.muted : statusColor(v.status);
+    final tone = v == null ? Palette.muted : statusColor(v.status);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
@@ -558,7 +558,7 @@ class _FilterBar extends StatelessWidget {
               height: 42,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: Brand.bg,
+                color: Palette.bg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -587,10 +587,10 @@ class _FilterBar extends StatelessWidget {
                       child: Text(v.driver,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
+                          style: TextStyle(fontSize: 11.5, color: Palette.muted)),
                     ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.unfold_more_rounded, size: 18, color: Brand.muted),
+                  Icon(Icons.unfold_more_rounded, size: 18, color: Palette.muted),
                 ],
               ),
             ),
@@ -613,7 +613,7 @@ class _FilterBar extends StatelessWidget {
                     height: 42,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Brand.bg,
+                      color: Palette.bg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -667,7 +667,7 @@ class _ArrowButton extends StatelessWidget {
     final rtl = Directionality.of(context) == TextDirection.rtl;
     final icon = back == rtl ? Icons.chevron_right_rounded : Icons.chevron_left_rounded;
     return Material(
-      color: Brand.bg,
+      color: Palette.bg,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -675,7 +675,7 @@ class _ArrowButton extends StatelessWidget {
         child: SizedBox(
           width: 42,
           height: 42,
-          child: Icon(icon, color: onTap == null ? Brand.border : Brand.text),
+          child: Icon(icon, color: onTap == null ? Palette.border : Palette.text),
         ),
       ),
     );
@@ -697,7 +697,7 @@ class _Stat extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
-          Text(label, style: const TextStyle(fontSize: 10, color: Brand.muted)),
+          Text(label, style: TextStyle(fontSize: 10, color: Palette.muted)),
         ],
       ),
     );
@@ -723,7 +723,7 @@ class _SegmentTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Material(
-        color: const Color(0xB3101C2B),
+        color: Palette.glass,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -749,7 +749,7 @@ class _SegmentTile extends StatelessWidget {
                   stop
                       ? _minutes(segment.durationMin)
                       : '${segment.distance} ${tr('hist.km')}  ·  ${_minutes(segment.durationMin)}',
-                  style: const TextStyle(fontSize: 11.5, color: Brand.muted),
+                  style: TextStyle(fontSize: 11.5, color: Palette.muted),
                 ),
               ],
             ),
@@ -794,7 +794,7 @@ class _Empty extends StatelessWidget {
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 32, color: Brand.muted),
+        Icon(icon, size: 32, color: Palette.muted),
         const SizedBox(height: 10),
         Text(text,
             textAlign: TextAlign.center,

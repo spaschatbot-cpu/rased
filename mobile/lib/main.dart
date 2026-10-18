@@ -41,6 +41,7 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
     /* اللغة قبل أي رسم: بناء الشاشة بالعربية ثم قلبها إنجليزيًّا بعد لحظة
        ومضة مزعجة عند كل فتح لمن اختار الإنجليزية */
     await AppLocale.restore();
+    await AppTheme.restore();
     await _tracker.restore();
 
     /* الأسطول يتبع الجلسة: يبدأ السؤال عند الدخول ويتوقف عند الخروج،
@@ -81,11 +82,15 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
 
   @override
   Widget build(BuildContext context) {
-    /* اللغة تُعاد بناء الشجرة كلّها عند تغيّرها — بما فيها اتجاه الكتابة،
-       الذي كان مثبَّتًا على اليمين ولا يصحّ تثبيته بعد اليوم */
-    return ValueListenableBuilder<String>(
-      valueListenable: AppLocale.current,
-      builder: (context, lang, _) => MaterialApp(
+    /* اللغة والمظهر يعيدان بناء الشجرة كلّها عند تغيّرهما — بما فيها اتجاه
+       الكتابة. المفتاح يفرض إعادة البناء على الألوان المقروءة من [Palette]
+       مباشرةً، فلا يبقى جزء بألوان المظهر السابق */
+    return ListenableBuilder(
+      listenable: Listenable.merge([AppLocale.current, AppTheme.dark]),
+      builder: (context, _) {
+        final lang = AppLocale.current.value;
+        return MaterialApp(
+        key: ValueKey(AppTheme.isDark),
         title: 'أوتو تراك',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
@@ -108,7 +113,8 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
                     ? LoginScreen(tracker: _tracker, api: _api)
                     : TrackingShell(tracker: _tracker, fleet: _fleet, api: _api),
               ),
-      ),
+        );
+      },
     );
   }
 }

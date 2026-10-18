@@ -54,7 +54,7 @@ class AccountTab extends StatelessWidget {
         Text(
           role.startsWith('fleet.role.') ? session.role : role,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12.5, color: Brand.muted),
+          style: TextStyle(fontSize: 12.5, color: Palette.muted),
         ),
         const SizedBox(height: 22),
         _Row(
@@ -67,6 +67,12 @@ class AccountTab extends StatelessWidget {
           label: tr('profile.language'),
           value: AppLocale.isArabic ? 'العربية' : 'English',
           onTap: AppLocale.toggle,
+        ),
+        _Row(
+          icon: AppTheme.isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          label: tr('profile.theme'),
+          value: AppTheme.isDark ? tr('profile.theme.dark') : tr('profile.theme.light'),
+          onTap: AppTheme.toggle,
         ),
         const SizedBox(height: 22),
         OutlinedButton.icon(
@@ -99,7 +105,7 @@ class _Row extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: const Color(0xB3101C2B),
+        color: Palette.glass,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
@@ -113,13 +119,13 @@ class _Row extends StatelessWidget {
               children: [
                 Icon(icon, size: 19, color: Brand.green),
                 const SizedBox(width: 12),
-                Text(label, style: const TextStyle(fontSize: 13, color: Brand.muted)),
+                Text(label, style: TextStyle(fontSize: 13, color: Palette.muted)),
                 const Spacer(),
                 Text(value,
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
                 if (onTap != null) ...[
                   const SizedBox(width: 4),
-                  const Icon(Icons.chevron_left_rounded, size: 18, color: Brand.muted),
+                  Icon(Icons.chevron_left_rounded, size: 18, color: Palette.muted),
                 ],
               ],
             ),

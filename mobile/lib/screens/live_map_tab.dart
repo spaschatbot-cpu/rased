@@ -264,7 +264,7 @@ class _VehicleMarker extends StatelessWidget {
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 6),
             decoration: BoxDecoration(
-              color: Brand.bg.withValues(alpha: 0.88),
+              color: Palette.bg.withValues(alpha: 0.88),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: tone.withValues(alpha: 0.6)),
             ),
@@ -273,8 +273,8 @@ class _VehicleMarker extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textDirection: TextDirection.ltr,
-              style: const TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w900, color: Brand.text),
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w900, color: Palette.text),
             ),
           ),
         ],
@@ -307,8 +307,8 @@ class _Counts extends StatelessWidget {
                   ),
                   Text(
                     tr('fleet.status.$s'),
-                    style: const TextStyle(
-                        fontSize: 10, fontWeight: FontWeight.w700, color: Brand.muted),
+                    style: TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.w700, color: Palette.muted),
                   ),
                 ],
               ),
@@ -338,9 +338,9 @@ class _SelectedCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
           decoration: BoxDecoration(
-            color: Brand.panel,
+            color: Palette.panel,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Brand.border),
+            border: Border.all(color: Palette.border),
             boxShadow: const [
               BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 10)),
             ],
@@ -369,15 +369,15 @@ class _SelectedCard extends StatelessWidget {
                         vehicle.driver.isEmpty ? tr('fleet.noDriver') : vehicle.driver,
                         if (pos != null) ageLabel(pos.ageSeconds),
                       ].join('  ·  '),
-                      style: const TextStyle(fontSize: 12, color: Brand.muted),
+                      style: TextStyle(fontSize: 12, color: Palette.muted),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Brand.muted),
+              Icon(Icons.chevron_right_rounded, color: Palette.muted),
               IconButton(
                 onPressed: onClose,
-                icon: const Icon(Icons.close_rounded, size: 19, color: Brand.muted),
+                icon: Icon(Icons.close_rounded, size: 19, color: Palette.muted),
               ),
             ],
           ),
@@ -399,7 +399,7 @@ class _EmptyCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.satellite_alt_outlined, size: 30, color: Brand.muted),
+          Icon(Icons.satellite_alt_outlined, size: 30, color: Palette.muted),
           const SizedBox(height: 10),
           Text(tr('fleet.noLive'),
               textAlign: TextAlign.center,
@@ -407,7 +407,7 @@ class _EmptyCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(tr('fleet.noLiveHint'),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, height: 1.5, color: Brand.muted)),
+              style: TextStyle(fontSize: 12, height: 1.5, color: Palette.muted)),
         ],
       ),
     );
@@ -448,10 +448,10 @@ class _MapButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Brand.panel,
+        color: Palette.panel,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Brand.border),
+          side: BorderSide(color: Palette.border),
         ),
         child: InkWell(
           onTap: onTap,
@@ -459,7 +459,7 @@ class _MapButton extends StatelessWidget {
           child: SizedBox(
             width: 42,
             height: 42,
-            child: Icon(icon, size: 20, color: Brand.text),
+            child: Icon(icon, size: 20, color: Palette.text),
           ),
         ),
       ),

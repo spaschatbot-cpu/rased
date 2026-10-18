@@ -74,10 +74,10 @@ class _VehiclesTabState extends State<VehiclesTab> {
                   onChanged: (_) => setState(() {}),
                   style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
-                    fillColor: const Color(0xB3101C2B),
+                    fillColor: Palette.glass,
                     hintText: tr('fleet.search'),
-                    hintStyle: const TextStyle(fontSize: 13, color: Brand.muted),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Brand.muted),
+                    hintStyle: TextStyle(fontSize: 13, color: Palette.muted),
+                    prefixIcon: Icon(Icons.search_rounded, color: Palette.muted),
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -90,7 +90,7 @@ class _VehiclesTabState extends State<VehiclesTab> {
                   children: [
                     _Chip(
                       label: '${tr('fleet.all')} ${store.vehicles.length}',
-                      tone: Brand.text,
+                      tone: Palette.text,
                       selected: _status == null,
                       onTap: () => setState(() => _status = null),
                     ),
@@ -123,9 +123,9 @@ class _VehiclesTabState extends State<VehiclesTab> {
 
   List<Widget> _body(FleetStore store, List<FleetVehicle> rows) {
     if (store.loading && store.vehicles.isEmpty) {
-      return const [
-        SizedBox(height: 80),
-        Center(child: CircularProgressIndicator()),
+      return [
+        const SizedBox(height: 80),
+        const Center(child: CircularProgressIndicator()),
       ];
     }
     if (rows.isEmpty) {
@@ -133,7 +133,7 @@ class _VehiclesTabState extends State<VehiclesTab> {
       return [
         const SizedBox(height: 60),
         Icon(none ? Icons.local_shipping_outlined : Icons.search_off_rounded,
-            size: 36, color: Brand.muted),
+            size: 36, color: Palette.muted),
         const SizedBox(height: 12),
         Text(none ? tr('fleet.empty') : tr('fleet.noMatch'),
             textAlign: TextAlign.center,
@@ -142,7 +142,7 @@ class _VehiclesTabState extends State<VehiclesTab> {
           const SizedBox(height: 6),
           Text(tr('fleet.emptyHint'),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Brand.muted)),
+              style: TextStyle(fontSize: 12, color: Palette.muted)),
         ],
       ];
     }
@@ -181,7 +181,7 @@ class _VehicleTile extends StatelessWidget {
     final tone = statusColor(v.status);
 
     return Material(
-      color: const Color(0xB3101C2B),
+      color: Palette.glass,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
@@ -221,7 +221,7 @@ class _VehicleTile extends StatelessWidget {
                       ].join('  ·  '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11.5, color: Brand.muted),
+                      style: TextStyle(fontSize: 11.5, color: Palette.muted),
                     ),
                   ],
                 ),
@@ -237,7 +237,7 @@ class _VehicleTile extends StatelessWidget {
                       v.status == 'moving'
                           ? '${pos.speed} ${tr('fleet.kmh')}'
                           : ageLabel(pos.ageSeconds),
-                      style: const TextStyle(fontSize: 10.5, color: Brand.muted),
+                      style: TextStyle(fontSize: 10.5, color: Palette.muted),
                     ),
                   ],
                 ],
@@ -274,16 +274,16 @@ class _Chip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? tone.withValues(alpha: 0.16) : const Color(0xB3101C2B),
+            color: selected ? tone.withValues(alpha: 0.16) : Palette.glass,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: selected ? tone : Brand.border),
+            border: Border.all(color: selected ? tone : Palette.border),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: selected ? tone : Brand.muted,
+              color: selected ? tone : Palette.muted,
             ),
           ),
         ),

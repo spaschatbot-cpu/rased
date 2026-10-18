@@ -10,7 +10,7 @@ Color statusColor(String status) => switch (status) {
       'moving' => Brand.green,
       'idle' => Brand.warn,
       'stopped' => Brand.danger,
-      _ => Brand.muted,
+      _ => Palette.muted,
     };
 
 const fleetStatuses = ['moving', 'idle', 'stopped', 'offline'];
@@ -67,7 +67,7 @@ class PageHeader extends StatelessWidget {
                   Text(subtitle!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
+                      style: TextStyle(fontSize: 11.5, color: Palette.muted)),
                 ],
               ],
             ),
@@ -129,7 +129,7 @@ Future<void> showVehicleSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Brand.panel,
+    backgroundColor: Palette.panel,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
@@ -204,7 +204,7 @@ class _VehicleSheetState extends State<_VehicleSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Brand.border,
+                  color: Palette.border,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -235,7 +235,7 @@ class _VehicleSheetState extends State<_VehicleSheet> {
                       ),
                       if (v.model.isNotEmpty)
                         Text(v.model,
-                            style: const TextStyle(fontSize: 12, color: Brand.muted)),
+                            style: TextStyle(fontSize: 12, color: Palette.muted)),
                     ],
                   ),
                 ),
@@ -253,11 +253,11 @@ class _VehicleSheetState extends State<_VehicleSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.portable_wifi_off_rounded, size: 18, color: Brand.muted),
+                    Icon(Icons.portable_wifi_off_rounded, size: 18, color: Palette.muted),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(tr('fleet.neverReported'),
-                          style: const TextStyle(fontSize: 12.5, color: Brand.muted)),
+                          style: TextStyle(fontSize: 12.5, color: Palette.muted)),
                     ),
                   ],
                 ),
@@ -330,8 +330,8 @@ class _VehicleSheetState extends State<_VehicleSheet> {
                         widget.onShowHistory!();
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Brand.text,
-                        side: const BorderSide(color: Brand.border),
+                        foregroundColor: Palette.text,
+                        side: BorderSide(color: Palette.border),
                         minimumSize: const Size.fromHeight(54),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
@@ -362,7 +362,7 @@ class _Stat extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.035),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Brand.border.withValues(alpha: 0.6)),
+        border: Border.all(color: Palette.border.withValues(alpha: 0.6)),
       ),
       child: Row(
         children: [
@@ -372,7 +372,7 @@ class _Stat extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 10.5, color: Brand.muted)),
+                Text(label, style: TextStyle(fontSize: 10.5, color: Palette.muted)),
                 Text(value,
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900)),
               ],
@@ -398,11 +398,11 @@ class _Line extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 17, color: Brand.muted),
+          Icon(icon, size: 17, color: Palette.muted),
           const SizedBox(width: 10),
           SizedBox(
             width: 82,
-            child: Text(label, style: const TextStyle(fontSize: 12, color: Brand.muted)),
+            child: Text(label, style: TextStyle(fontSize: 12, color: Palette.muted)),
           ),
           Expanded(
             child: Text(value,

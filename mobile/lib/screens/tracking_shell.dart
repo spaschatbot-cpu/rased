@@ -32,7 +32,10 @@ class TrackingShell extends StatefulWidget {
 }
 
 class _TrackingShellState extends State<TrackingShell> {
-  int _tab = 0;
+  /// يبقى بعد تبديل المظهر، الذي يعيد بناء التطبيق من جديد.
+  static int _lastTab = 0;
+
+  int _tab = _lastTab;
 
   /// مركبة طُلب عرضها على الخريطة من القائمة.
   final _focus = ValueNotifier<int?>(null);
@@ -48,12 +51,12 @@ class _TrackingShellState extends State<TrackingShell> {
   }
 
   void _showOnMap(int vehicleId) {
-    setState(() => _tab = 0);
+    setState(() => _tab = _lastTab = 0);
     _focus.value = vehicleId;
   }
 
   void _showHistory(int vehicleId) {
-    setState(() => _tab = 2);
+    setState(() => _tab = _lastTab = 2);
     _history.value = vehicleId;
   }
 
@@ -62,11 +65,11 @@ class _TrackingShellState extends State<TrackingShell> {
     final session = widget.tracker.session!;
 
     return Scaffold(
-      backgroundColor: Stage.bg,
+      backgroundColor: AppTheme.isDark ? Stage.bg : Palette.bg,
       body: Stack(
         children: [
           /* نفس مسرح شاشة الدخول، أهدأ: خلفية حيّة بلا أن تنافس المحتوى */
-          const Positioned.fill(child: StageBackground(intensity: 0.5)),
+          if (AppTheme.isDark) const Positioned.fill(child: StageBackground(intensity: 0.5)),
           SafeArea(
         bottom: false,
         child: Column(
@@ -110,7 +113,7 @@ class _TrackingShellState extends State<TrackingShell> {
       ),
       bottomNavigationBar: _BottomBar(
         index: _tab,
-        onChanged: (i) => setState(() => _tab = i),
+        onChanged: (i) => setState(() => _tab = _lastTab = i),
       ),
     );
   }
@@ -119,12 +122,12 @@ class _TrackingShellState extends State<TrackingShell> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Brand.panel,
+        backgroundColor: Palette.panel,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(tr('top.signOut'),
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
         content: Text(tr('fleet.signOutConfirm'),
-            style: const TextStyle(fontSize: 13.5, color: Brand.muted)),
+            style: TextStyle(fontSize: 13.5, color: Palette.muted)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false), child: Text(tr('shift.cancel'))),
@@ -147,7 +150,7 @@ class _TopBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: BoxDecoration(
-        color: const Color(0xCC0B1524),
+        color: Palette.bar,
         border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: Row(
@@ -179,8 +182,8 @@ class _TopBar extends StatelessWidget {
               Text(tr('app.title'),
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
               Text(tr('fleet.subtitle'),
-                  style: const TextStyle(
-                      fontSize: 10.5, fontWeight: FontWeight.w700, color: Brand.muted)),
+                  style: TextStyle(
+                      fontSize: 10.5, fontWeight: FontWeight.w700, color: Palette.muted)),
             ],
           ),
         ],
@@ -206,7 +209,7 @@ class _BottomBar extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xF20B1524),
+        color: Palette.bar,
         border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: SafeArea(
@@ -223,14 +226,14 @@ class _BottomBar extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(index == i ? items[i].$2 : items[i].$1,
-                            size: 21, color: index == i ? Brand.green : Brand.muted),
+                            size: 21, color: index == i ? Brand.green : Palette.muted),
                         const SizedBox(height: 3),
                         Text(
                           tr(items[i].$3),
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: index == i ? FontWeight.w900 : FontWeight.w700,
-                            color: index == i ? Brand.green : Brand.muted,
+                            color: index == i ? Brand.green : Palette.muted,
                           ),
                         ),
                       ],
