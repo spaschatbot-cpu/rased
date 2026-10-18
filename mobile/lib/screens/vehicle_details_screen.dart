@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,7 +36,7 @@ String _pick(Map<String, dynamic>? m, String ar, String en) {
 }
 
 /// صفحة المركبة: بطاقة الهوية، ثم تبويبات النظرة العامة والرحلات والسائق
-/// وسجل التعيينات والتفاصيل. تُحدَّث كل عشر ثوانٍ ما دامت مفتوحة.
+/// وسجل التعيينات والتفاصيل. تُحدَّث كل خمس ثوانٍ ما دامت مفتوحة.
 class VehicleDetailsScreen extends StatefulWidget {
   const VehicleDetailsScreen({
     super.key,
@@ -68,7 +67,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   void initState() {
     super.initState();
     _load();
-    _timer = Timer.periodic(const Duration(seconds: 10), (_) => _load());
+    /* خمس ثوانٍ: الخريطة هنا لمركبة واحدة تُتابَع، لا لأسطول يُستعرض */
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _load());
   }
 
   @override
@@ -205,38 +205,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             ),
           const SizedBox(height: 16),
 
-          /* الأفعال */
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _Action(
-                icon: Icons.near_me_rounded,
-                label: tr('vd.navigate'),
-                primary: true,
-                onTap: point == null
-                    ? null
-                    : () => _open('https://www.google.com/maps/dir/?api=1&destination='
-                        '${point.latitude},${point.longitude}'),
-              ),
-              _Action(
-                icon: Icons.share_rounded,
-                label: tr('vd.share'),
-                onTap: point == null ? null : () => _share(point),
-              ),
-              _Action(
-                icon: Icons.history_rounded,
-                label: tr('fleet.history'),
-                onTap: widget.onShowHistory == null
-                    ? null
-                    : () {
-                        Navigator.of(context).pop();
-                        widget.onShowHistory!();
-                      },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
           /* الحالة */
           Container(
             padding: const EdgeInsets.all(16),
@@ -347,14 +315,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('vd.cannotOpen'))));
     }
-  }
-
-  Future<void> _share(LatLng p) async {
-    final plate = '${_vehicle['plate'] ?? ''}';
-    final link = 'https://www.google.com/maps?q=${p.latitude},${p.longitude}';
-    await Clipboard.setData(ClipboardData(text: '$plate\n$link'));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('vd.copied'))));
   }
 
   /* ───────────────────────── الرحلات ───────────────────────── */
@@ -824,10 +784,20 @@ class _VehicleMapState extends State<_VehicleMap> {
   final _map = MapController();
   bool _ready = false;
 
+  /// الخريطة تلحق بالمركبة مع كل تحديث، حتى يحرّكها المستخدم بيده.
+  bool _following = true;
+
   @override
   void didUpdateWidget(_VehicleMap old) {
     super.didUpdateWidget(old);
-    if (_ready && widget.point != old.point) _map.move(widget.point, _map.camera.zoom);
+    if (_ready && _following && widget.point != old.point) {
+      _map.move(widget.point, _map.camera.zoom);
+    }
+  }
+
+  void _follow() {
+    setState(() => _following = true);
+    _map.move(widget.point, 16);
   }
 
   @override
@@ -848,6 +818,9 @@ class _VehicleMapState extends State<_VehicleMap> {
                   flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                 ),
                 onMapReady: () => _ready = true,
+                onPositionChanged: (_, hasGesture) {
+                  if (hasGesture && _following) setState(() => _following = false);
+                },
               ),
               children: [
                 TileLayer(
@@ -889,8 +862,8 @@ class _VehicleMapState extends State<_VehicleMap> {
                     const SizedBox(height: 8),
                   ],
                   _MapBtn(
-                    icon: Icons.my_location_rounded,
-                    onTap: () => _map.move(widget.point, 16),
+                    icon: _following ? Icons.gps_fixed_rounded : Icons.my_location_rounded,
+                    onTap: _follow,
                   ),
                 ],
               ),
@@ -978,42 +951,6 @@ class _Chip extends StatelessWidget {
         boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 8)],
       ),
       child: DefaultTextStyle.merge(style: TextStyle(color: Palette.text), child: child),
-    );
-  }
-}
-
-class _Action extends StatelessWidget {
-  const _Action({required this.icon, required this.label, required this.onTap, this.primary = false});
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onTap == null;
-    return Opacity(
-      opacity: disabled ? 0.4 : 1,
-      child: Column(
-        children: [
-          Material(
-            color: primary ? Brand.green : Palette.panel,
-            shape: CircleBorder(side: primary ? BorderSide.none : BorderSide(color: Palette.border)),
-            child: InkWell(
-              onTap: onTap,
-              customBorder: const CircleBorder(),
-              child: SizedBox(
-                width: 62,
-                height: 62,
-                child: Icon(icon, size: 24, color: primary ? Brand.onGreen : Palette.text),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Palette.muted)),
-        ],
-      ),
     );
   }
 }
