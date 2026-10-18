@@ -31,9 +31,6 @@ dependencies:
   flutter_map: ^8.3.1
   latlong2: ^0.10.1
 
-  # التوجيه في خرائط Google والاتصال بالسائق من صفحة المركبة
-  url_launcher: ^6.3.1
-
 dev_dependencies:
   flutter_lints: ^4.0.0
 

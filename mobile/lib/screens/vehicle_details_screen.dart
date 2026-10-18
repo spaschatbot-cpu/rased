@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../i18n.dart';
 import '../services/api_client.dart';
@@ -35,7 +34,7 @@ String _pick(Map<String, dynamic>? m, String ar, String en) {
   return first.isNotEmpty ? first : '${m[AppLocale.isArabic ? en : ar] ?? ''}'.trim();
 }
 
-/// صفحة المركبة: بطاقة الهوية، ثم تبويبات النظرة العامة والرحلات والسائق
+/// صفحة المركبة: بطاقة الهوية، ثم تبويبات النظرة العامة والرحلات
 /// والتفاصيل. تُحدَّث كل خمس ثوانٍ ما دامت مفتوحة.
 class VehicleDetailsScreen extends StatefulWidget {
   const VehicleDetailsScreen({
@@ -100,7 +99,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     final tabs = [
       tr('vd.tab.overview'),
       tr('vd.tab.trips'),
-      tr('vd.tab.driver'),
       tr('vd.tab.details'),
     ];
 
@@ -142,7 +140,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                   switch (_tab) {
                     0 => _overview(),
                     1 => _trips(),
-                    2 => _driverTab(),
                     _ => _details(),
                   },
                 ],
@@ -308,13 +305,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     );
   }
 
-  Future<void> _open(String url) async {
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('vd.cannotOpen'))));
-    }
-  }
-
   /* ───────────────────────── الرحلات ───────────────────────── */
 
   Widget _trips() {
@@ -389,60 +379,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               ),
               icon: const Icon(Icons.history_rounded, size: 19),
               label: Text(tr('vd.fullHistory')),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /* ───────────────────────── السائق ───────────────────────── */
-
-  Widget _driverTab() {
-    final d = _driver;
-    if (d == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _Panel(
-          child: Text(tr('fleet.noDriver'),
-              textAlign: TextAlign.center, style: TextStyle(color: Palette.muted)),
-        ),
-      );
-    }
-    final name = _pick(d, 'nameAr', 'nameEn');
-    final phone = '${d['phone'] ?? ''}'.trim();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Panel(
-            child: Column(
-              children: [
-                _Avatar(name: name, size: 64),
-                const SizedBox(height: 10),
-                Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-                if (phone.isNotEmpty)
-                  Text(phone,
-                      textDirection: TextDirection.ltr,
-                      style: TextStyle(fontSize: 12.5, color: Palette.muted)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          if ('${d['username'] ?? ''}'.isNotEmpty)
-            _Field(label: tr('profile.username'), value: '${d['username']}'),
-          if (d['lastLoginAt'] != null)
-            _Field(
-                label: tr('vd.lastLogin'),
-                value: '${_date(d['lastLoginAt'] as String?)}  ${_clock(d['lastLoginAt'] as String?)}'),
-          if (phone.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: () => _open('tel:$phone'),
-              icon: const Icon(Icons.call_rounded, size: 19),
-              label: Text(tr('vd.call')),
             ),
           ],
         ],
