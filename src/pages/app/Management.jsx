@@ -364,7 +364,8 @@ export default function Management() {
                 </div>
               </div>
 
-              <nav className="flex gap-2 overflow-x-auto p-3 lg:flex-col lg:gap-1.5 lg:overflow-visible">
+              {/* الأقسام تتمرّر داخل الشريط حين تطول عن ارتفاعه، فتبقى الصلاحية أسفله ظاهرة دائمًا */}
+              <nav className="flex gap-2 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:overflow-y-auto">
                 {tabs.map((tb) => {
                   const on = tab === tb.key
                   const args = { users, vehicles, groups, maintenance, support }
@@ -433,7 +434,7 @@ export default function Management() {
                 })}
               </nav>
 
-              <div className="mt-auto hidden border-t border-[var(--s-border)] bg-[var(--s-panel-2)]/70 px-4 py-3.5 lg:block">
+              <div className="mt-auto hidden shrink-0 border-t border-[var(--s-border)] bg-[var(--s-panel-2)]/70 px-4 py-3.5 lg:block">
                 <div className="flex items-center gap-2.5">
                   <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-500/15 text-brand-500">
                     <ShieldCheck size={15} strokeWidth={2.4} />
