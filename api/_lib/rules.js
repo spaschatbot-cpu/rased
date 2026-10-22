@@ -32,7 +32,7 @@ const SEED = [
   { type: 'speed', threshold: 120, channels: ['web', 'push'], active: true, vehicles: 'all', severity: 'high' },
   { type: 'power', threshold: null, channels: ['web', 'mail', 'sms'], active: true, vehicles: 'all', severity: 'high' },
   { type: 'geofenceOut', threshold: null, channels: ['web', 'push'], active: true, vehicles: 'all', severity: 'medium' },
-  { type: 'idle', threshold: 20, channels: ['web'], active: false, vehicles: 'all', severity: 'low' },
+  { type: 'idle', threshold: 20, channels: ['web'], active: true, vehicles: 'all', severity: 'low' },
   { type: 'sos', threshold: null, channels: ['web', 'sms', 'push'], active: true, vehicles: 'all', severity: 'high' },
   { type: 'maintenance', threshold: 10000, channels: ['mail'], active: true, vehicles: 'all', severity: 'low' },
 ]
@@ -78,11 +78,20 @@ const stored = collection({ key: 'alertRules', seed, validate, shape })
 const isDemoZoneRule = (r) =>
   r.type === 'geofenceOut' && Array.isArray(r.vehicles) && r.vehicles.join(',') === '1,5,6'
 
+/**
+ * The long-stop rule shipped switched off. One nobody has edited since
+ * (an edit stamps `updatedAt`) is switched on; one an operator turned off
+ * on purpose stays off.
+ */
+const isDormantIdleRule = (r) => r.type === 'idle' && r.active === false && !r.updatedAt
+
 async function all() {
   const list = await stored.all()
-  const stale = list.filter(isDemoZoneRule)
-  if (!stale.length) return list
-  for (const r of stale) await stored.patch(r.id, { vehicles: 'all' })
+  const zone = list.filter(isDemoZoneRule)
+  const idle = list.filter(isDormantIdleRule)
+  if (!zone.length && !idle.length) return list
+  for (const r of zone) await stored.patch(r.id, { vehicles: 'all' })
+  for (const r of idle) await stored.patch(r.id, { active: true })
   return stored.all()
 }
 
