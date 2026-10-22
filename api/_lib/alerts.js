@@ -15,6 +15,7 @@
 import { get, mutate } from './store.js'
 import { rulesFor } from './rules.js'
 import { contains } from './geofences.js'
+import { dayOf } from '../../shared/clock.js'
 
 const INBOX = 'alerts'
 const stateKey = (vehicleId) => `alert-state:${vehicleId}`
@@ -90,6 +91,13 @@ export function evaluate(fix, previous, { vehicle, zones = [], memory = {} }) {
     events.push({ type: 'lowBattery', value: fix.battery, detail: `${fix.battery}%` })
     /* a tracker reporting nothing left is a power failure, not a warning */
     if (fix.battery === 0) events.push({ type: 'power', detail: '0%' })
+  }
+
+  /* A hardware tracker reports its external supply in volts. Under a volt
+     means the vehicle's power was cut or the unit unplugged — it is running
+     on its own backup battery now. */
+  if (fix.power != null && fix.power < 1 && fix.battery !== 0) {
+    events.push({ type: 'power', detail: `${fix.power} V` })
   }
 
   if (fix.sos) events.push({ type: 'sos', detail: null })
@@ -171,6 +179,7 @@ export async function process(fix, previous, { vehicle, zones, rules, driver }) 
         driverId: driver?.id ?? null,
         driverName: driver?.nameAr ?? null,
         detail: event.detail ?? null,
+        value: event.value ?? null,
         zoneId: event.zoneId ?? null,
         lat: fix.lat,
         lng: fix.lng,
@@ -189,8 +198,45 @@ export async function process(fix, previous, { vehicle, zones, rules, driver }) 
          happened, so it goes on reversed */
       return [...fired].reverse().concat(all).slice(0, INBOX_LIMIT)
     })
+    await countFired(fired)
   }
   return fired
+}
+
+/* ── per-day counters ───────────────────────────────────────────────────
+   The inbox keeps the latest 500 alerts and drops the rest, which is right
+   for a list someone reads but wrong for "how many speeding events this
+   month" — a busy fleet pushes last week out of it. So every fired alert is
+   also counted into its day, and the counts are never trimmed by the inbox.
+   Counting is bookkeeping: a failure is logged, never thrown. */
+
+const dayKey = (day) => `alertdays:${day}`
+
+/** The counts for one day, or null when nothing was counted that day. */
+export const countsFor = (day) => get(dayKey(day))
+
+async function countFired(fired) {
+  const byDay = new Map()
+  for (const a of fired) {
+    const day = dayOf(a.at)
+    if (!byDay.has(day)) byDay.set(day, [])
+    byDay.get(day).push(a)
+  }
+  try {
+    for (const [day, list] of byDay) {
+      await mutate(dayKey(day), (current) => {
+        const c = current ?? { types: {}, byVehicle: {} }
+        for (const a of list) {
+          c.types[a.type] = (c.types[a.type] ?? 0) + 1
+          const v = (c.byVehicle[a.vehicleId] ??= {})
+          v[a.type] = (v[a.type] ?? 0) + 1
+        }
+        return c
+      })
+    }
+  } catch (err) {
+    console.error('[alerts] could not count:', err.message)
+  }
 }
 
 /** Clear the latch when a shift ends, so tomorrow starts from a clean slate. */

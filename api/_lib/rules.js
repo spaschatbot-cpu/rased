@@ -31,7 +31,7 @@ export const CHANNELS = ['web', 'push', 'mail', 'sms']
 const SEED = [
   { type: 'speed', threshold: 120, channels: ['web', 'push'], active: true, vehicles: 'all', severity: 'high' },
   { type: 'power', threshold: null, channels: ['web', 'mail', 'sms'], active: true, vehicles: 'all', severity: 'high' },
-  { type: 'geofenceOut', threshold: null, channels: ['web', 'push'], active: true, vehicles: [1, 5, 6], severity: 'medium' },
+  { type: 'geofenceOut', threshold: null, channels: ['web', 'push'], active: true, vehicles: 'all', severity: 'medium' },
   { type: 'idle', threshold: 20, channels: ['web'], active: false, vehicles: 'all', severity: 'low' },
   { type: 'sos', threshold: null, channels: ['web', 'sms', 'push'], active: true, vehicles: 'all', severity: 'high' },
   { type: 'maintenance', threshold: 10000, channels: ['mail'], active: true, vehicles: 'all', severity: 'low' },
@@ -67,7 +67,26 @@ const shape = (body, existing) => ({
   active: body.active !== false,
 })
 
-export const rules = collection({ key: 'alertRules', seed, validate, shape })
+const stored = collection({ key: 'alertRules', seed, validate, shape })
+
+/**
+ * The zone-exit rule used to ship watching vehicles 1, 5 and 6 — ids from the
+ * demo fleet, which a real registry does not have. Left alone it watches
+ * nobody, so the first read after this change widens it to the whole fleet.
+ * Only the untouched seed value is matched: a list an operator chose is kept.
+ */
+const isDemoZoneRule = (r) =>
+  r.type === 'geofenceOut' && Array.isArray(r.vehicles) && r.vehicles.join(',') === '1,5,6'
+
+async function all() {
+  const list = await stored.all()
+  const stale = list.filter(isDemoZoneRule)
+  if (!stale.length) return list
+  for (const r of stale) await stored.patch(r.id, { vehicles: 'all' })
+  return stored.all()
+}
+
+export const rules = { ...stored, all }
 
 /** Does this rule watch this vehicle? */
 export const covers = (rule, vehicleId) =>

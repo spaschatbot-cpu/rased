@@ -15,12 +15,15 @@ import { badRequest, query } from '../_lib/collection.js'
 import { vehicles as registry } from '../_lib/vehicles.js'
 import { allPositions, statusOf } from '../_lib/positions.js'
 import { pointsFor, summarise } from '../_lib/history.js'
-import { inbox } from '../_lib/alerts.js'
+import { countsFor, inbox } from '../_lib/alerts.js'
 import { decorate, maintenance } from '../_lib/maintenance.js'
 import { dayOf } from '../../shared/clock.js'
 
 const MAX_DAYS = 31
 const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/** A stop at least this long counts as a long stop, read straight off the trail. */
+const LONG_STOP_MIN = 20
 
 /** How much one event of each kind costs the safety score, per 100 km driven. */
 const WEIGHTS = { speed: 4, idle: 1, geofenceOut: 2, sos: 10, lowBattery: 0.5, power: 2 }
@@ -77,8 +80,13 @@ export default handler({
       for (const day of span) {
         const points = await pointsFor(vehicle.id, day)
         if (!points.length) continue
-        const { trips, stats } = summarise(points)
+        const { trips, stops, stats } = summarise(points)
         perDay.get(day).km += stats.totalDistance
+        /* long stops are measured, not alerted: they count even when no idle
+           rule is switched on */
+        const long = stops.filter((s) => s.durationMin >= LONG_STOP_MIN)
+        perDay.get(day).events.idle += long.length
+        perDay.get(day).events.idleMinutes += long.reduce((m, s) => m + s.durationMin, 0)
         if (!inRange.has(day)) continue
 
         reported.add(vehicle.id)
@@ -97,18 +105,35 @@ export default handler({
       }
     }
 
-    /* ── alerts: counted into the range and into each chart day ───────── */
-    const events = emptyEvents()
+    /* ── alerts: per-day counters, which the inbox cap cannot trim. A day
+       from before counting began has none, and falls back to the inbox ──── */
+    const counted = new Map()
+    for (const day of span) {
+      const c = await countsFor(day)
+      if (c) counted.set(day, c)
+    }
+    const add = (day, type, vehicleId, n) => {
+      if (type === 'idle') return // measured from the trail above
+      const bucket = perDay.get(day).events
+      if (type in bucket) bucket[type] += n
+      if (type === 'speed' && inRange.has(day) && perVehicle.has(vehicleId)) {
+        perVehicle.get(vehicleId).speedEvents += n
+      }
+    }
+    for (const [day, c] of counted) {
+      for (const [vehicleId, types] of Object.entries(c.byVehicle ?? {})) {
+        for (const [type, n] of Object.entries(types)) add(day, type, Number(vehicleId), n)
+      }
+    }
     for (const a of alerts) {
       const day = dayOf(a.at)
-      if (!perDay.has(day)) continue
-      const bucket = perDay.get(day).events
-      if (a.type in bucket) bucket[a.type] += 1
-      if (a.type === 'idle') bucket.idleMinutes += Number(a.value) || 0
-      if (!inRange.has(day)) continue
-      if (a.type in events) events[a.type] += 1
-      if (a.type === 'idle') events.idleMinutes += Number(a.value) || 0
-      if (a.type === 'speed' && perVehicle.has(a.vehicleId)) perVehicle.get(a.vehicleId).speedEvents += 1
+      if (!perDay.has(day) || counted.has(day)) continue
+      add(day, a.type, a.vehicleId, 1)
+    }
+
+    const events = emptyEvents()
+    for (const day of days) {
+      for (const [k, n] of Object.entries(perDay.get(day).events)) events[k] += n
     }
 
     /* ── now: live status, maintenance ─────────────────────────────────── */

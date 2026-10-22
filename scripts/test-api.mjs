@@ -45,7 +45,8 @@ r = await call('/auth/me')
 check('GET /auth/me anonymous', r.data.user, null)
 
 /* ── guards before login ──────────────────────────────────────── */
-check('PUT /site anonymous → 401', (await call('/site', { method: 'PUT', body: {} })).status, 401)
+/* the landing-page editor was retired: nobody may write it, signed in or not */
+check('PUT /site anonymous → 405', (await call('/site', { method: 'PUT', body: {} })).status, 405)
 check('GET /messages anonymous → 401', (await call('/messages')).status, 401)
 check('DELETE /messages anonymous → 401', (await call('/messages?id=x', { method: 'DELETE' })).status, 401)
 
@@ -66,36 +67,15 @@ check('demo login → 200', r.status, 200)
 check('demo role', r.data.user?.role, 'admin')
 
 /* ── role separation ──────────────────────────────────────────── */
-check('demo PUT /site → 403', (await call('/site', { method: 'PUT', body: {}, as: 'demo' })).status, 403)
+check('demo PUT /site → 405', (await call('/site', { method: 'PUT', body: {}, as: 'demo' })).status, 405)
 check('demo GET /messages → 403', (await call('/messages', { as: 'demo' })).status, 403)
 
 /* ── session restore ──────────────────────────────────────────── */
 r = await call('/auth/me', { as: 'admin' })
 check('me with cookie', r.data.user?.username, 'superadmin')
 
-/* ── content write + validation ───────────────────────────────── */
-r = await call('/site', {
-  method: 'PUT',
-  as: 'admin',
-  body: {
-    text: { ar: { 'hero.badge': 'من السيرفر', 'not.a.real.key': 'x', 'hero.cta': '   ' }, en: {} },
-    hidden: ['faq', 'faq', 'nonsense'],
-    order: ['cta'],
-  },
-})
-check('admin PUT /site → 200', r.status, 200)
-check('unknown key stripped', r.data.site.text.ar['not.a.real.key'], undefined)
-check('blank override stripped', r.data.site.text.ar['hero.cta'], undefined)
-check('real edit kept', r.data.site.text.ar['hero.badge'], 'من السيرفر')
-check('bogus section stripped', r.data.site.hidden.includes('nonsense'), false)
-check('hidden deduped', r.data.site.hidden.length, 1)
-check('order completed to 9', r.data.site.order.length, 9)
-check('order respects admin choice', r.data.site.order[0], 'cta')
-
-/* ── the whole point: anonymous visitors see it ───────────────── */
-r = await call('/site')
-check('anonymous sees the edit', r.data.site.text.ar['hero.badge'], 'من السيرفر')
-check('anonymous sees the layout', r.data.site.hidden[0], 'faq')
+/* ── content is read-only ─────────────────────────────────────── */
+check('admin PUT /site → 405', (await call('/site', { method: 'PUT', as: 'admin', body: {} })).status, 405)
 
 /* ── contact form ─────────────────────────────────────────────── */
 check('message needs name+phone', (await call('/messages', { method: 'POST', body: { name: 'x' } })).status, 400)
@@ -117,7 +97,7 @@ check('delete needs an id', (await call('/messages', { method: 'DELETE', as: 'ad
 
 /* ── tampering ────────────────────────────────────────────────── */
 cookies.forged = 'mirsad_session=eyJ1Ijoic3VwZXJhZG1pbiIsInIiOiJzdXBlcmFkbWluIiwiZSI6OTk5OTk5OTk5OTk5OX0.deadbeef'
-check('forged cookie rejected', (await call('/site', { method: 'PUT', body: {}, as: 'forged' })).status, 401)
+check('forged cookie rejected', (await call('/messages', { as: 'forged' })).status, 401)
 
 /* ── logout ───────────────────────────────────────────────────── */
 r = await call('/auth/logout', { method: 'POST', as: 'admin' })
@@ -128,13 +108,6 @@ check('logout clears the cookie', /mirsad_session=;|Max-Age=0/.test(r.res.header
 check('PATCH /site → 405', (await call('/site', { method: 'PATCH' })).status, 405)
 check('unknown route → 404', (await call('/nope')).status, 404)
 check('private lib not routable', (await call('/_lib/auth')).status, 404)
-
-/* ── reset so the repo ships clean ────────────────────────────── */
-r = await call('/auth/login', { method: 'POST', body: { username: 'superadmin', password: 'Mirsad@2026' } })
-jar('admin', r.res)
-await call('/site', { method: 'PUT', as: 'admin', body: { text: { ar: {}, en: {} }, hidden: [], order: [] } })
-r = await call('/site')
-check('reset to shipped copy', Object.keys(r.data.site.text.ar).length, 0)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
