@@ -6,6 +6,7 @@ import '../services/fleet_store.dart';
 import '../services/tracker.dart';
 import '../theme.dart';
 import '../widgets/fleet_widgets.dart';
+import '../widgets/light_backdrop.dart';
 import '../widgets/stage_background.dart';
 import 'account_tab.dart';
 import 'dashboard_tab.dart';
@@ -71,7 +72,9 @@ class _TrackingShellState extends State<TrackingShell> {
       body: Stack(
         children: [
           /* نفس مسرح شاشة الدخول، أهدأ: خلفية حيّة بلا أن تنافس المحتوى */
-          if (AppTheme.isDark) const Positioned.fill(child: StageBackground(intensity: 0.5)),
+          Positioned.fill(
+            child: AppTheme.isDark ? const StageBackground(intensity: 0.5) : const LightBackdrop(),
+          ),
           SafeArea(
         bottom: false,
         child: Column(
