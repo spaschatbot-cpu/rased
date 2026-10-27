@@ -49,8 +49,20 @@ class SessionStore {
   static const _userKey = 'mirsad.user';
 
   Future<Session?> read() async {
-    final token = await _storage.read(key: _tokenKey);
-    final raw = await _storage.read(key: _userKey);
+    String? token;
+    String? raw;
+    try {
+      token = await _storage.read(key: _tokenKey);
+      raw = await _storage.read(key: _userKey);
+    } catch (_) {
+      /* التخزين المشفّر يتعذّر فكّه بعد إعادة التثبيت أو استرجاع نسخة
+         احتياطية — المفتاح الذي شفّره ضاع مع التطبيق القديم. يُمسح ويُبدأ
+         من جديد، فيسجّل المستخدم دخوله مرة أخرى */
+      try {
+        await _storage.deleteAll();
+      } catch (_) {}
+      return null;
+    }
     if (token == null || raw == null) return null;
     try {
       return Session(token: token, user: jsonDecode(raw) as Map<String, dynamic>);

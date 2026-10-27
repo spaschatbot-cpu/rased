@@ -37,35 +37,51 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
     _boot();
   }
 
+  /// خطوة إقلاع لا تُعلِّق التطبيق: خطأ أو بطء في أيٍّ منها يُتجاوز، فأسوأ
+  /// الأحوال شاشة الدخول — لا دائرة انتظار لا تنتهي.
+  Future<void> _step(Future<void> Function() run) async {
+    try {
+      await run().timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('[boot] skipped: $e');
+    }
+  }
+
   Future<void> _boot() async {
     /* اللغة قبل أي رسم: بناء الشاشة بالعربية ثم قلبها إنجليزيًّا بعد لحظة
        ومضة مزعجة عند كل فتح لمن اختار الإنجليزية */
-    await AppLocale.restore();
-    await AppTheme.restore();
-    await _tracker.restore();
+    await _step(AppLocale.restore);
+    await _step(AppTheme.restore);
+    await _step(_tracker.restore);
 
     /* الأسطول يتبع الجلسة: يبدأ السؤال عند الدخول ويتوقف عند الخروج،
        فلا يسأل السيرفر بتوكن انتهى */
     _tracker.addListener(_followSession);
     _followSession();
 
-    // الإدارة قد تكون بدّلت مركبته أو أوقفت حسابه أثناء غيابه
-    final token = _tracker.session?.token;
-    if (token != null) {
-      try {
-        final fresh = await _api.me(token);
-        if (fresh == null) {
-          await _tracker.signOut();
-        } else {
-          await _tracker.setSession(_tracker.session!.copyWith(user: fresh));
-        }
-      } on ApiException catch (e) {
-        // بلا شبكة نبقي الجلسة المحلية؛ فقدان الصلاحية وحده يُخرجه
-        if (e.isAuthFailure) await _tracker.signOut();
-      }
-    }
-
+    /* الشاشة تظهر الآن، والتحقق من الحساب يجري خلفها — شبكة بطيئة لا
+       تحبس المستخدم أمام دائرة الانتظار */
     if (mounted) setState(() => _ready = true);
+    _refreshAccount();
+  }
+
+  /// الإدارة قد تكون أوقفت الحساب أثناء الغياب.
+  Future<void> _refreshAccount() async {
+    final token = _tracker.session?.token;
+    if (token == null) return;
+    try {
+      final fresh = await _api.me(token);
+      if (fresh == null) {
+        await _tracker.signOut();
+      } else if (_tracker.session != null) {
+        await _tracker.setSession(_tracker.session!.copyWith(user: fresh));
+      }
+    } on ApiException catch (e) {
+      // بلا شبكة نبقي الجلسة المحلية؛ فقدان الصلاحية وحده يُخرجه
+      if (e.isAuthFailure) await _tracker.signOut();
+    } catch (e) {
+      debugPrint('[boot] account refresh failed: $e');
+    }
   }
 
   void _followSession() {
