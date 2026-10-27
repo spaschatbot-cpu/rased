@@ -43,7 +43,9 @@ class Session {
 
 class SessionStore {
   static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    /* resetOnError: a file that can no longer be decrypted is wiped rather
+       than thrown on every read */
+    aOptions: AndroidOptions(encryptedSharedPreferences: true, resetOnError: true),
   );
   static const _tokenKey = 'mirsad.token';
   static const _userKey = 'mirsad.user';

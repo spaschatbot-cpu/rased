@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -31,9 +33,18 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
   /// على شاشة الدخول لحظة عند كل فتح رغم أنه مسجّل بالفعل.
   bool _ready = false;
 
+  /// حدّ أعلى لشاشة الانتظار مهما حدث داخل الإقلاع.
+  Timer? _bootGuard;
+
   @override
   void initState() {
     super.initState();
+    _bootGuard = Timer(const Duration(seconds: 8), () {
+      if (mounted && !_ready) {
+        debugPrint('[boot] guard fired — showing the app without waiting');
+        setState(() => _ready = true);
+      }
+    });
     _boot();
   }
 
@@ -61,7 +72,8 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
 
     /* الشاشة تظهر الآن، والتحقق من الحساب يجري خلفها — شبكة بطيئة لا
        تحبس المستخدم أمام دائرة الانتظار */
-    if (mounted) setState(() => _ready = true);
+    _bootGuard?.cancel();
+    if (mounted && !_ready) setState(() => _ready = true);
     _refreshAccount();
   }
 
@@ -91,6 +103,7 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
   @override
   void dispose() {
     _tracker.removeListener(_followSession);
+    _bootGuard?.cancel();
     _fleet.dispose();
     _tracker.dispose();
     super.dispose();

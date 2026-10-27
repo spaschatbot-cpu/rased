@@ -63,6 +63,19 @@ if (withLabel !== labelled) {
   console.log('launcher label already set')
 }
 
+/* No Android auto-backup. A restored backup brings back the encrypted session
+   file but not the Keystore key that decrypts it, and reading it then fails or
+   stalls on startup — the app sits on its loading spinner. A tracker app has
+   nothing worth restoring that signing in again does not give back. */
+const backed = readFileSync(MANIFEST, 'utf8')
+const noBackup = backed.includes('android:allowBackup')
+  ? backed
+  : backed.replace('<application', '<application android:allowBackup="false" android:fullBackupContent="false"')
+if (noBackup !== backed) {
+  writeFileSync(MANIFEST, noBackup)
+  console.log('disabled auto-backup')
+}
+
 /* `flutter create` also writes its counter-app widget test, which asserts on a
    MyApp and an Icons.add that do not exist here — the root widget is
    AutoTrackDriverApp. It has never compiled, and flutter_test is not a dependency,
