@@ -210,7 +210,8 @@ export async function process(fix, previous, { vehicle, zones, rules, driver }) 
    also counted into its day, and the counts are never trimmed by the inbox.
    Counting is bookkeeping: a failure is logged, never thrown. */
 
-const dayKey = (day) => `alertdays:${day}`
+export const alertDayKey = (day) => `alertdays:${day}`
+const dayKey = alertDayKey
 
 /** The counts for one day, or null when nothing was counted that day. */
 export const countsFor = (day) => get(dayKey(day))

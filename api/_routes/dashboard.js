@@ -14,8 +14,9 @@ import { requireUser } from '../_lib/auth.js'
 import { badRequest, query } from '../_lib/collection.js'
 import { vehicles as registry } from '../_lib/vehicles.js'
 import { allPositions, statusOf } from '../_lib/positions.js'
-import { pointsFor, summarise } from '../_lib/history.js'
-import { countsFor, inbox } from '../_lib/alerts.js'
+import { summarise, trailKey } from '../_lib/history.js'
+import { alertDayKey, inbox } from '../_lib/alerts.js'
+import { mget } from '../_lib/store.js'
 import { decorate, maintenance } from '../_lib/maintenance.js'
 import { dayOf } from '../../shared/clock.js'
 
@@ -76,9 +77,18 @@ export default handler({
     const reported = new Set()
     const inRange = new Set(days)
 
-    for (const vehicle of fleet) {
-      for (const day of span) {
-        const points = await pointsFor(vehicle.id, day)
+    /* Every trail and every day's alert counts in one round-trip each. Read one
+       key at a time, a 30-day window over a small fleet was well over a
+       hundred sequential database calls — longer than the app waits. */
+    const pairs = fleet.flatMap((v) => span.map((day) => ({ vehicle: v, day })))
+    const [trails, counts] = await Promise.all([
+      mget(pairs.map((p) => trailKey(p.vehicle.id, p.day))),
+      mget(span.map(alertDayKey)),
+    ])
+
+    for (const [i, { vehicle, day }] of pairs.entries()) {
+      {
+        const points = Array.isArray(trails[i]) ? trails[i] : []
         if (!points.length) continue
         const { trips, stops, stats } = summarise(points)
         perDay.get(day).km += stats.totalDistance
@@ -108,10 +118,9 @@ export default handler({
     /* ── alerts: per-day counters, which the inbox cap cannot trim. A day
        from before counting began has none, and falls back to the inbox ──── */
     const counted = new Map()
-    for (const day of span) {
-      const c = await countsFor(day)
-      if (c) counted.set(day, c)
-    }
+    span.forEach((day, i) => {
+      if (counts[i]) counted.set(day, counts[i])
+    })
     const add = (day, type, vehicleId, n) => {
       if (type === 'idle') return // measured from the trail above
       const bucket = perDay.get(day).events

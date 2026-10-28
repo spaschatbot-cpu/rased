@@ -43,6 +43,9 @@ function placeFor(points, at) {
 }
 
 const dayKey = (vehicleId, date) => `trail:${vehicleId}:${date}`
+
+/** The store key of one vehicle's trail for one day — for callers that batch reads. */
+export const trailKey = dayKey
 const indexKey = (vehicleId) => `trail-days:${vehicleId}`
 
 /**

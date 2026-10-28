@@ -88,7 +88,20 @@ const sbDel = (key) =>
   })
 
 /** One round-trip for many keys — the position poll is built on this. */
+/* keys travel in the URL, so a long list is split — a fleet-wide month of
+   trails would otherwise outgrow what a proxy will accept in one line */
+const SB_MGET_CHUNK = 100
+
 async function sbMget(keys) {
+  if (keys.length > SB_MGET_CHUNK) {
+    const parts = []
+    for (let i = 0; i < keys.length; i += SB_MGET_CHUNK) parts.push(keys.slice(i, i + SB_MGET_CHUNK))
+    return (await Promise.all(parts.map(sbMgetOnce))).flat()
+  }
+  return sbMgetOnce(keys)
+}
+
+async function sbMgetOnce(keys) {
   const filter = keys.map(quoted).join(',')
   const rows = await postgrest(`${TABLE}?key=in.(${encodeURIComponent(filter)})&select=key,value`)
   /* rows come back in whatever order the planner chose; the caller is promised
