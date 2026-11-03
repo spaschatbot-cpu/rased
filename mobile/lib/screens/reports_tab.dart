@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../i18n.dart';
 import '../services/api_client.dart';
 import '../services/fleet_store.dart';
+import '../services/report_pdf.dart';
 import '../theme.dart';
 import '../widgets/fleet_widgets.dart';
 
@@ -48,7 +49,8 @@ class _ReportsTabState extends State<ReportsTab> {
     ('general', Icons.summarize_rounded),
     ('driving', Icons.route_rounded),
     ('speed', Icons.speed_rounded),
-    ('sfda', Icons.ac_unit_rounded),
+    /* التبريد (sfda) مخفي حتى يُركَّب جهاز بحساس حرارة — بقيّة الصفحة ما
+       زالت تعرف كيف تعرضه، فإعادته سطر واحد */
   ];
 
   String _type = 'general';
@@ -163,6 +165,77 @@ class _ReportsTabState extends State<ReportsTab> {
     }
   }
 
+  bool _exporting = false;
+
+  String get _periodText => _from == _to ? _fmt(_from) : '${_fmt(_from)} — ${_fmt(_to)}';
+
+  /// الجدول نفسه الذي تعرضه الصفحة، بأعمدة تناسب نوع التقرير.
+  (List<String>, List<List<String>>) _table(List<Map<String, dynamic>> rows) {
+    String day(Map<String, dynamic> r) {
+      final d = r['day'] == null ? null : DateTime.tryParse('${r['day']}');
+      return d == null ? '' : '${_two(d.day)}/${_two(d.month)}/${d.year}';
+    }
+
+    return switch (_type) {
+      'general' => (
+          [tr('vd.plate'), tr('hist.distance'), tr('dash.driving'), tr('hist.maxSpeed'),
+            tr('dash.avgSpeed'), tr('hist.stops'), tr('rep.violations')],
+          [
+            for (final r in rows)
+              ['${r['plate']}', '${r['distance']} ${tr('hist.km')}', '${r['engineHours']} ${tr('hist.h')}',
+                '${r['maxSpeed']}', '${r['avgSpeed']}', '${r['stops']}', '${r['violations']}'],
+          ],
+        ),
+      'driving' => (
+          [tr('vd.plate'), tr('pdf.date'), tr('pdf.from'), tr('pdf.to'), tr('rep.duration'),
+            tr('hist.distance'), tr('hist.maxSpeed'), tr('hist.stops')],
+          [
+            for (final r in rows)
+              ['${r['plate']}', day(r), '${r['start']}', '${r['end']}', _minutes((r['durationMin'] as num?) ?? 0),
+                '${r['distance']} ${tr('hist.km')}', '${r['maxSpeed']}', '${r['stops']}'],
+          ],
+        ),
+      _ => (
+          [tr('vd.plate'), tr('pdf.date'), tr('pdf.time'), tr('rep.peak'), tr('rep.limit'),
+            tr('rep.over'), tr('rep.duration'), tr('fleet.address')],
+          [
+            for (final r in rows)
+              ['${r['plate']}', day(r), '${r['at']}', '${r['speed']}', '${r['limit']}',
+                '+${((r['speed'] as num?) ?? 0) - ((r['limit'] as num?) ?? 0)}',
+                '${r['durationSec']} ${tr('rep.sec')}',
+                '${AppLocale.isArabic ? r['addressAr'] : r['addressEn']}'],
+          ],
+        ),
+    };
+  }
+
+  Future<void> _exportPdf() async {
+    final data = _data;
+    if (data == null || _exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final rows = ((data['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
+      final (columns, table) = _table(rows);
+      await shareReportPdf(
+        ReportDoc(
+          title: '${tr('rep.title')} — ${tr('rep.type.$_type')}',
+          period: _periodText,
+          vehicles: _vehicles.isEmpty ? tr('fleet.allVehicles') : tr1('rep.nVehicles', _vehicles.length),
+          summary: [for (final c in _summaryCells(rows)) (c.$3, c.$4)],
+          columns: columns,
+          rows: table,
+        ),
+        'autotrack-$_type-${_iso(_from)}_${_iso(_to)}.pdf',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('pdf.failed'))));
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
   Future<void> _openVehicles() async {
     final picked = await showModalBottomSheet<Set<int>>(
       context: context,
@@ -190,7 +263,26 @@ class _ReportsTabState extends State<ReportsTab> {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          PageHeader(icon: Icons.assessment_rounded, title: tr('rep.title')),
+          PageHeader(
+            icon: Icons.assessment_rounded,
+            title: tr('rep.title'),
+            trailing: FilledButton.icon(
+              onPressed: _data == null || _loading || _exporting ? null : _exportPdf,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+              ),
+              icon: _exporting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Brand.onGreen),
+                    )
+                  : const Icon(Icons.picture_as_pdf_rounded, size: 18),
+              label: Text(tr('pdf.export')),
+            ),
+          ),
 
           /* نوع التقرير: أربعة أزرار متساوية */
           Padding(
@@ -232,7 +324,7 @@ class _ReportsTabState extends State<ReportsTab> {
                 _FilterRow(
                   icon: Icons.calendar_month_rounded,
                   title: _preset == 'custom' ? tr('dash.range.custom') : tr('dash.range.$_preset'),
-                  value: _from == _to ? _fmt(_from) : '${_fmt(_from)} — ${_fmt(_to)}',
+                  value: _periodText,
                   ltrValue: true,
                   onTap: _openPeriod,
                 ),
@@ -285,11 +377,11 @@ class _ReportsTabState extends State<ReportsTab> {
 
   /* ───────────────────────── الملخّص ───────────────────────── */
 
-  Widget _summary(List<Map<String, dynamic>> rows) {
+  List<(IconData, Color, String, String)> _summaryCells(List<Map<String, dynamic>> rows) {
     num sum(String k) => rows.fold<num>(0, (s, r) => s + ((r[k] as num?) ?? 0));
     num max(String k) => rows.fold<num>(0, (s, r) => ((r[k] as num?) ?? 0) > s ? (r[k] as num) : s);
 
-    final cells = switch (_type) {
+    return switch (_type) {
       'general' => [
           (Icons.route_rounded, Brand.green, tr('hist.distance'), '${sum('distance').toStringAsFixed(1)} ${tr('hist.km')}'),
           (Icons.timer_rounded, const Color(0xFF38BDF8), tr('dash.driving'), '${sum('engineHours').toStringAsFixed(1)} ${tr('hist.h')}'),
@@ -319,6 +411,10 @@ class _ReportsTabState extends State<ReportsTab> {
               '${rows.map((r) => r['vehicleId']).toSet().length}'),
         ],
     };
+  }
+
+  Widget _summary(List<Map<String, dynamic>> rows) {
+    final cells = _summaryCells(rows);
 
     Widget cell((IconData, Color, String, String) c) => Padding(
           padding: const EdgeInsets.all(12),
