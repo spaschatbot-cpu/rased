@@ -48,7 +48,7 @@ cd C:/mirsad-driver
 
 ```bash
 cd mobile
-flutter create --org sa.mirsad --project-name mirsad_driver .
+flutter create --org click --project-name autotracksa .
 ```
 
 الأمر يحترم الملفات الموجودة ويضيف ما ينقص.
@@ -123,7 +123,7 @@ rm -rf ../public/driver && cp -r build/web ../public/driver
 > `<script>` صفحةً مكان جافاسكربت ويفشل بلا استثناء ولا رسالة في الطرفية —
 > شاشة بيضاء، كونسول نظيف، وكل ملف يُخدَم بنجاح إن سألت عنه بمساره الكامل.
 >
-> العَرَض الذي يميّزها: عنوان التبويب يبقى `mirsad_driver` بدل «أوتو تراك — السائق»،
+> العَرَض الذي يميّزها: عنوان التبويب يبقى `autotracksa` بدل «أوتو تراك — السائق»،
 > لأن العنوان العربي يضعه التطبيق بعد إقلاعه.
 
 > **على Git Bash في ويندوز** يحوّل MSYS الوسيط `/driver/` إلى مسار ويندوز

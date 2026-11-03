@@ -45,7 +45,7 @@ jobs:
       - name: Generate the android project
         working-directory: mobile
         run: |
-          flutter create --org sa.mirsad --project-name mirsad_driver --platforms=android .
+          flutter create --org click --project-name autotracksa --platforms=android .
           node tool/apply-platform-additions.mjs
 
       # Same reason as the manifest merge: generation writes the stock Flutter

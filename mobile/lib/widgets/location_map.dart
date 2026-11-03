@@ -95,7 +95,7 @@ class _LocationMapState extends State<LocationMap> {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   /* مطلوب من شروط استخدام OSM — بلا معرّف تُحجب الطلبات */
-                  userAgentPackageName: 'sa.mirsad.mirsad_driver',
+                  userAgentPackageName: 'click.autotracksa',
                   maxNativeZoom: 19,
                   /* بلاطة فشلت لا تُظهر أيقونة خطأ فوق الخريطة */
                   errorTileCallback: (_, __, ___) {},

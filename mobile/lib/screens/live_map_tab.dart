@@ -130,7 +130,7 @@ class _LiveMapTabState extends State<LiveMapTab> {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'sa.mirsad.mirsad_driver',
+                  userAgentPackageName: 'click.autotracksa',
                   maxNativeZoom: 19,
                   errorTileCallback: (_, __, ___) {},
                 ),
