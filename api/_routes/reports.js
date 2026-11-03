@@ -23,7 +23,6 @@ import { MOVING_KMH } from '../../shared/trail-math.js'
 import { reverse } from '../_lib/geocode.js'
 import { vehicles as registry } from '../_lib/vehicles.js'
 import { rules, rulesFor } from '../_lib/rules.js'
-import { findById } from '../_lib/users.js'
 
 export const TYPES = ['general', 'driving', 'speed', 'sfda']
 
@@ -132,6 +131,7 @@ const drivingRows = (vehicle, points) => {
     id: `${vehicle.id}-${trip.startAt}-${k}`,
     vehicleId: vehicle.id,
     plate: vehicle.plate,
+    day: dayOf(trip.startAt),
     start: clock(trip.startAt),
     end: clock(trip.endAt),
     durationMin: trip.durationMin,
@@ -148,6 +148,7 @@ function speedRows(vehicle, points, limit) {
       id: `${vehicle.id}-s${run.from}-${k}`,
       vehicleId: vehicle.id,
       plate: vehicle.plate,
+      day: dayOf(run.from),
       at: clock(run.from),
       speed: run.peak,
       limit,
@@ -218,7 +219,7 @@ const sfdaRows = (vehicle, points) =>
 
 export default handler({
   async GET(req, res) {
-    const caller = requireUser(req)
+    requireUser(req)
     const params = query(req)
 
     const type = params.get('type') || 'general'
@@ -245,10 +246,7 @@ export default handler({
 
     let fleet = await registry.all()
     if (asked.length) fleet = fleet.filter((v) => asked.includes(v.id))
-    if (caller.r === 'driver') {
-      const driver = await findById(caller.i)
-      fleet = fleet.filter((v) => v.id === driver?.vehicleId)
-    }
+    /* every account sees every vehicle — the same rule as the live map */
 
     const build = { general: generalRow, driving: drivingRows, speed: speedRows, sfda: sfdaRows }[type]
     const ruleList = await rules.all()

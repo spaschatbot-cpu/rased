@@ -149,6 +149,13 @@ class ApiClient {
     return ((data['positions'] as List?) ?? const []).cast<Map<String, dynamic>>();
   }
 
+  /// تقرير لفترة: `general` · `driving` · `speed` · `sfda`. [vehicles] فارغة = الكل.
+  Future<Map<String, dynamic>> report(String token, String type, String from, String to,
+      {List<int> vehicles = const []}) {
+    final v = vehicles.isEmpty ? '' : '&vehicles=${vehicles.join(',')}';
+    return _send('GET', '/reports?type=$type&from=$from&to=$to$v', token: token);
+  }
+
   /// لوحة التحكم لفترة: المؤشرات والأحداث والسلامة والأسطول.
   Future<Map<String, dynamic>> dashboard(String token, String from, String to) {
     return _send('GET', '/dashboard?from=$from&to=$to', token: token);

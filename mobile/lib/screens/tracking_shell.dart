@@ -11,6 +11,7 @@ import '../widgets/stage_background.dart';
 import 'account_tab.dart';
 import 'dashboard_tab.dart';
 import 'history_tab.dart';
+import 'reports_tab.dart';
 import 'live_map_tab.dart';
 import 'vehicles_tab.dart';
 
@@ -118,6 +119,20 @@ class _TrackingShellState extends State<TrackingShell> {
                     token: session.token,
                     request: _history,
                   ),
+                  ReportsTab(
+                    store: widget.fleet,
+                    api: widget.api,
+                    token: session.token,
+                    onOpenVehicle: (id) => showVehicleSheet(
+                      context,
+                      store: widget.fleet,
+                      vehicleId: id,
+                      api: widget.api,
+                      token: session.token,
+                      onShowOnMap: () => _showOnMap(id),
+                      onShowHistory: () => _showHistory(id),
+                    ),
+                  ),
                   AccountTab(
                     session: session,
                     onSignOut: () => _confirmSignOut(context),
@@ -224,6 +239,7 @@ class _BottomBar extends StatelessWidget {
       (Icons.map_outlined, Icons.map_rounded, 'fleet.tab.map'),
       (Icons.local_shipping_outlined, Icons.local_shipping_rounded, 'fleet.tab.vehicles'),
       (Icons.history_rounded, Icons.history_rounded, 'fleet.tab.history'),
+      (Icons.assessment_outlined, Icons.assessment_rounded, 'fleet.tab.reports'),
       (Icons.person_outline, Icons.person_rounded, 'fleet.tab.account'),
     ];
 
@@ -251,7 +267,7 @@ class _BottomBar extends StatelessWidget {
                         Text(
                           tr(items[i].$3),
                           style: TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 9.5,
                             fontWeight: index == i ? FontWeight.w900 : FontWeight.w700,
                             color: index == i ? Brand.green : Palette.muted,
                           ),
