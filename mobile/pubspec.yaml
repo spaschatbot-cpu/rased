@@ -34,6 +34,8 @@ dependencies:
   # تصدير التقارير PDF ومشاركتها (واتساب، إيميل، طباعة)
   pdf: ^3.11.0
   printing: ^5.13.0
+  # تنزيل الـPDF مباشرة في نسخة الويب
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0

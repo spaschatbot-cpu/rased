@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../i18n.dart';
+import 'pdf_save/save_io.dart' if (dart.library.js_interop) 'pdf_save/save_web.dart';
 
 /// تقرير جاهز للتصدير: العنوان والفترة والملخّص، ثم جدول بأعمدته وصفوفه.
 class ReportDoc {
@@ -35,10 +35,10 @@ const _muted = PdfColor.fromInt(0xFF66768A);
 const _line = PdfColor.fromInt(0xFFE1E7EF);
 const _zebra = PdfColor.fromInt(0xFFF6F8FA);
 
-/// يبني الملف ويفتح نافذة المشاركة — واتساب، إيميل، حفظ، طباعة.
+/// يبني الملف ثم يشاركه على الهاتف، أو ينزّله في المتصفح.
 Future<void> shareReportPdf(ReportDoc doc, String fileName) async {
   final bytes = await buildReportPdf(doc);
-  await Printing.sharePdf(bytes: bytes, filename: fileName);
+  await savePdf(bytes, fileName);
 }
 
 final _arabic = RegExp(r'[؀-ۿ]');
