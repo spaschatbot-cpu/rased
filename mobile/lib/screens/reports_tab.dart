@@ -227,9 +227,14 @@ class _ReportsTabState extends State<ReportsTab> {
         ),
         'autotrack-$_type-${_iso(_from)}_${_iso(_to)}.pdf',
       );
-    } catch (e) {
+    } catch (e, st) {
+      /* السبب يظهر مع الرسالة: «تعذّر» وحدها لا تقول ما الذي يُصلَح */
+      debugPrint('[pdf] export failed: $e\n$st');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('pdf.failed'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 10),
+          content: Text('${tr('pdf.failed')}\n$e', maxLines: 4, overflow: TextOverflow.ellipsis),
+        ));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
