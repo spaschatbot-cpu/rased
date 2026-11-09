@@ -114,7 +114,7 @@ class OpsCardsState extends State<OpsCards> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _OpsCard(
+          child: StatTile(
             icon: Icons.assignment_rounded,
             tone: const Color(0xFF38BDF8),
             value: _trips == null ? '—' : '${_trips!.length}',
@@ -125,7 +125,7 @@ class OpsCardsState extends State<OpsCards> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _OpsCard(
+          child: StatTile(
             icon: Icons.build_circle_rounded,
             tone: Brand.warn,
             value: open == null ? '—' : '$open',
@@ -136,7 +136,7 @@ class OpsCardsState extends State<OpsCards> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _OpsCard(
+          child: StatTile(
             icon: Icons.badge_rounded,
             tone: Brand.green,
             value: _drivers == null ? '—' : '${_drivers!.length}',
@@ -151,64 +151,91 @@ class OpsCardsState extends State<OpsCards> {
   }
 }
 
-class _OpsCard extends StatelessWidget {
-  const _OpsCard({
+/// مربّع رقم واحد — نفس الشكل والطول للمؤشرات الثلاثة ولبطاقات التشغيل،
+/// فيصطفّ الصفّان. أيقونة في الأعلى، ثم الرقم، ثم العنوان وسطر صغير تحته.
+class StatTile extends StatelessWidget {
+  const StatTile({
+    super.key,
     required this.icon,
     required this.tone,
     required this.value,
     required this.label,
     required this.sub,
-    required this.onTap,
+    this.onTap,
     this.alert = false,
   });
+
+  static const height = 122.0;
 
   final IconData icon;
   final Color tone;
   final String value;
   final String label;
   final String sub;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool alert;
 
   @override
   Widget build(BuildContext context) {
+    final edge = alert ? Brand.danger.withValues(alpha: 0.55) : Palette.glassEdge;
     return Material(
-      color: Palette.glass,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: alert ? Brand.danger.withValues(alpha: 0.5) : Palette.glassEdge),
-      ),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          height: height,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: edge),
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [tone.withValues(alpha: 0.13), Palette.glass],
+              stops: const [0, 0.65],
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(color: tone.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-                    child: Icon(icon, size: 18, color: tone),
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: tone.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 17, color: tone),
                   ),
                   const Spacer(),
-                  Icon(AppLocale.isArabic ? Icons.chevron_left_rounded : Icons.chevron_right_rounded, size: 18, color: Palette.muted),
+                  if (onTap != null)
+                    Icon(AppLocale.isArabic ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded,
+                        size: 12, color: Palette.muted),
                 ],
               ),
-              const SizedBox(height: 10),
-              Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Palette.text)),
+              const Spacer(),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(value,
+                    style: TextStyle(fontSize: 24, height: 1.1, fontWeight: FontWeight.w900, color: Palette.text)),
+              ),
+              const SizedBox(height: 2),
               Text(label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Palette.text)),
-              const SizedBox(height: 2),
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Palette.text)),
               Text(sub,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.5, color: alert ? Brand.danger : Palette.muted)),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: alert ? FontWeight.w800 : FontWeight.w500,
+                    color: alert ? Brand.danger : Palette.muted,
+                  )),
             ],
           ),
         ),

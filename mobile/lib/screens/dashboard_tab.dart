@@ -285,29 +285,32 @@ class _DashboardTabState extends State<DashboardTab> {
             child: Row(
               children: [
                 Expanded(
-                  child: _Kpi(
+                  child: StatTile(
                     icon: Icons.directions_car_filled_rounded,
                     tone: const Color(0xFF38BDF8),
                     value: '${kpis['vehicles'] ?? '—'}',
                     label: tr('dash.kpi.vehicles'),
+                    sub: tr('dash.kpi.vehiclesSub'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _Kpi(
+                  child: StatTile(
                     icon: Icons.check_circle_rounded,
                     tone: Brand.green,
                     value: '${kpis['active'] ?? '—'}',
                     label: tr('dash.kpi.active'),
+                    sub: tr('dash.kpi.activeSub'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _Kpi(
+                  child: StatTile(
                     icon: Icons.build_rounded,
                     tone: Brand.warn,
                     value: '${kpis['maintenanceDue'] ?? '—'}',
                     label: tr('dash.kpi.maintenance'),
+                    sub: tr('dash.kpi.maintenanceSub'),
                   ),
                 ),
               ],
@@ -758,47 +761,6 @@ class _CardTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900)),
       ],
-    );
-  }
-}
-
-class _Kpi extends StatelessWidget {
-  const _Kpi({required this.icon, required this.tone, required this.value, required this.label});
-
-  final IconData icon;
-  final Color tone;
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        color: Palette.glass,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Palette.glassEdge),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: tone.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, size: 17, color: tone),
-          ),
-          const SizedBox(height: 10),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Palette.text)),
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 10.5, color: Palette.muted)),
-        ],
-      ),
     );
   }
 }
