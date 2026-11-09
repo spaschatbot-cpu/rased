@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Bell, Gauge, PlugZap, Siren, LogIn, LogOut, KeyRound, Timer, BatteryLow,
   Wrench, Plus, Trash2, CheckCheck, Mail, AlertTriangle, Send, User,
-  Thermometer, Snowflake, Fuel, TrendingDown, DoorOpen, Droplets, Unplug, Activity,
+  Thermometer, Snowflake, Fuel, TrendingDown, DoorOpen, Droplets, Unplug, Activity, IdCard,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
@@ -31,6 +31,7 @@ export const ALERT_ICON = {
   tank: Droplets,
   unplugged: Unplug,
   harsh: Activity,
+  license: IdCard,
 }
 
 export const ALERT_TONE = {
@@ -46,10 +47,11 @@ const ALERT_TYPES = [
   'ignitionOn', 'ignitionOff', 'idle', 'lowBattery', 'maintenance',
   /* these need a device with the matching sensor, and stay silent until one reports */
   'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop', 'door', 'tank', 'unplugged', 'harsh',
+  'license',
 ]
 
 /* a sensible starting threshold when the operator picks a type */
-const DEFAULT_THRESHOLD = { speed: '120', idle: '20', lowBattery: '20', maintenance: '10000', tempHigh: '8', tempLow: '2', lowFuel: '15', fuelDrop: '10' }
+const DEFAULT_THRESHOLD = { speed: '120', idle: '20', lowBattery: '20', maintenance: '10000', tempHigh: '8', tempLow: '2', lowFuel: '15', fuelDrop: '10', license: '30' }
 
 const MINI_TONE = {
   brand: 'bg-brand-500/12 text-brand-600 dark:text-brand-400',
@@ -112,6 +114,7 @@ export default function Alerts() {
     if (type === 'lowBattery') return 'V'
     if (type === 'tempHigh' || type === 'tempLow') return '°C'
     if (type === 'lowFuel' || type === 'fuelDrop') return '%'
+    if (type === 'license') return lang === 'ar' ? 'يوم' : 'days'
     return ''
   }
 

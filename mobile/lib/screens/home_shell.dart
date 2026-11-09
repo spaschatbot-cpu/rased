@@ -465,6 +465,7 @@ class _AlertTile extends StatelessWidget {
         'tank' => Icons.local_gas_station_outlined,
         'unplugged' => Icons.power_off_rounded,
         'harsh' => Icons.warning_amber_rounded,
+        'license' => Icons.badge_outlined,
         _ => Icons.info_outline,
       };
 

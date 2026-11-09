@@ -32,6 +32,7 @@ export const RULE_TYPES = [
   'tank',         // the fuel-tank lid opened
   'unplugged',    // tracker disconnected from the vehicle
   'harsh',        // harsh acceleration, braking or cornering
+  'license',      // threshold = days before a driver's licence expires
 ]
 
 /* temperatures go below zero — a freezer truck alarms at -15 */
@@ -62,7 +63,7 @@ function validate(body) {
 
   /* a speed or idle rule with no number to compare against would fire on
      everything or on nothing — neither is what the operator meant */
-  const needsThreshold = ['speed', 'idle', 'lowBattery', 'maintenance', 'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop']
+  const needsThreshold = ['speed', 'idle', 'lowBattery', 'maintenance', 'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop', 'license']
   if (needsThreshold.includes(body.type) && num(body.threshold, thresholdFloor(body.type), 1e6) == null) {
     return `a ${body.type} rule needs a threshold`
   }

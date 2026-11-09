@@ -18,6 +18,10 @@ class Session {
   String get nameAr => (user['nameAr'] as String?) ?? '';
   String get username => (user['username'] as String?) ?? '';
   String get role => (user['role'] as String?) ?? '';
+  /// The driver record the office keeps — `null` when nothing is on file.
+  String? get licenseNumber => _filled(user['licenseNumber']);
+  String? get licenseExpiry => _filled(user['licenseExpiry']);
+  static String? _filled(Object? v) => v is String && v.trim().isNotEmpty ? v : null;
 
   Map<String, dynamic>? get _vehicle => user['vehicle'] as Map<String, dynamic>?;
 

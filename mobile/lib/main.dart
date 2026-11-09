@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'i18n.dart';
+import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/tracking_shell.dart';
+import 'services/alerts_store.dart';
 import 'services/api_client.dart';
 import 'services/fleet_store.dart';
 import 'services/session.dart';
+import 'services/shifts_store.dart';
+import 'services/support_store.dart';
 import 'services/tracker.dart';
 import 'theme.dart';
 
@@ -28,6 +32,10 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
   final _api = ApiClient();
   late final Tracker _tracker = Tracker(api: _api, store: SessionStore());
   late final FleetStore _fleet = FleetStore(api: _api)..onAuthFailure = _tracker.signOut;
+  /* a driver's screens: their shift, their history, their messages */
+  late final AlertsStore _alerts = AlertsStore(api: _api);
+  late final ShiftsStore _shifts = ShiftsStore(api: _api);
+  late final SupportStore _support = SupportStore(api: _api);
 
   /// نبقى على شاشة الانتظار حتى تُقرأ الجلسة المخزَّنة، وإلا ومض السائق
   /// على شاشة الدخول لحظة عند كل فتح رغم أنه مسجّل بالفعل.
@@ -96,8 +104,16 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
     }
   }
 
+  /// One sign-in screen for everyone; the account's role picks the app.
+  bool get _isDriver => _tracker.session?.role == 'driver';
+
   void _followSession() {
-    _fleet.watch(_tracker.session?.token);
+    final token = _tracker.session?.token;
+    /* only the stores the signed-in role uses ask the server anything */
+    _fleet.watch(_isDriver ? null : token);
+    _alerts.watch(_isDriver ? token : null);
+    _shifts.watch(_isDriver ? token : null);
+    _support.watch(_isDriver ? token : null);
   }
 
   @override
@@ -105,6 +121,9 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
     _tracker.removeListener(_followSession);
     _bootGuard?.cancel();
     _fleet.dispose();
+    _alerts.dispose();
+    _shifts.dispose();
+    _support.dispose();
     _tracker.dispose();
     super.dispose();
   }
@@ -140,7 +159,9 @@ class _AutoTrackDriverAppState extends State<AutoTrackDriverApp> {
                 animation: _tracker,
                 builder: (context, _) => _tracker.session == null
                     ? LoginScreen(tracker: _tracker, api: _api)
-                    : TrackingShell(tracker: _tracker, fleet: _fleet, api: _api),
+                    : _isDriver
+                        ? HomeShell(tracker: _tracker, alerts: _alerts, shifts: _shifts, support: _support)
+                        : TrackingShell(tracker: _tracker, fleet: _fleet, api: _api),
               ),
         );
       },

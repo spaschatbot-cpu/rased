@@ -17,6 +17,7 @@
  */
 import { handler, ok } from '../_lib/http.js'
 import { get, set } from '../_lib/store.js'
+import { checkLicenses } from '../_lib/alerts.js'
 
 const KEY = 'heartbeat'
 
@@ -26,9 +27,17 @@ export default handler({
     const last = await get(KEY)
 
     let wrote = false
+    let licenseAlerts = 0
     if (last?.date !== today) {
       await set(KEY, { date: today, at: new Date().toISOString() })
       wrote = true
+      /* once a day, inside the same guard, so anyone refreshing this public
+         route cannot make it run more often than the cron does */
+      try {
+        licenseAlerts = (await checkLicenses()).length
+      } catch (err) {
+        console.error('[health] licence check failed:', err.message)
+      }
     }
 
     /* `since` is the useful number: it says how long the database has gone
@@ -37,6 +46,7 @@ export default handler({
       ok: true,
       date: today,
       wrote,
+      licenseAlerts,
       lastBeat: last?.at ?? null,
     })
   },

@@ -47,6 +47,9 @@ function validate(body, list, existing) {
   const email = clean(body.email, 160)
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return 'invalid email'
 
+  const expiry = clean(body.licenseExpiry, 10)
+  if (expiry && !/^\d{4}-\d{2}-\d{2}$/.test(expiry)) return 'licenseExpiry must be YYYY-MM-DD'
+
   /* a brand-new account has nothing to sign in with otherwise */
   const password = String(body.password ?? '')
   if (!existing && password.length < MIN_PASSWORD) return `password must be at least ${MIN_PASSWORD} characters`
@@ -73,6 +76,15 @@ function shape(body, existing) {
     groupId: Number(body.groupId) || 1,
     /* only a driver is tied to a vehicle */
     vehicleId: role === 'driver' && body.vehicleId ? Number(body.vehicleId) : null,
+    /* the driver record — identity and licence, kept only on a driver. A form
+       that does not carry a field keeps what is stored */
+    ...(role === 'driver'
+      ? {
+          nationalId: clean(body.nationalId ?? existing.nationalId, 20),
+          licenseNumber: clean(body.licenseNumber ?? existing.licenseNumber, 30),
+          licenseExpiry: clean(body.licenseExpiry ?? existing.licenseExpiry, 10),
+        }
+      : { nationalId: '', licenseNumber: '', licenseExpiry: '' }),
     /* `null` follows the role; an array is a hand-written grant. A super-admin
        is never limited, so an explicit list is not kept for one */
     pages:

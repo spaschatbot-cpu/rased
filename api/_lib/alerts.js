@@ -12,8 +12,8 @@
  *   • cooled down — a vehicle hovering on the edge of a threshold cannot
  *     rattle the inbox faster than COOLDOWN_MS per rule.
  */
-import { get, mutate } from './store.js'
-import { rulesFor } from './rules.js'
+import { get, mutate, set } from './store.js'
+import { rulesFor, rules as ruleStore } from './rules.js'
 import { contains } from './geofences.js'
 import { dayOf } from '../../shared/clock.js'
 import { SENSORS } from '../../shared/sensors.js'
@@ -365,4 +365,67 @@ export async function removeAlert(id) {
     return kept
   })
   return removed
+}
+
+/* ── driver licences ─────────────────────────────────────────────────
+   A licence does not expire on a fix, so this is not on the ingest path. The
+   daily heartbeat calls it once a day. Each driver is alerted once when the
+   licence enters the rule's window and once more on the day it lapses — not
+   every day in between. */
+
+const LICENSE_SENT = 'license-alerts'
+
+export async function checkLicenses(now = Date.now()) {
+  const [{ allUsers }, { vehicles }] = await Promise.all([import('./users.js'), import('./vehicles.js')])
+  const [ruleList, people, fleet, sent] = await Promise.all([
+    ruleStore.all(),
+    allUsers(),
+    vehicles.all(),
+    get(LICENSE_SENT),
+  ])
+  const done = { ...(sent ?? {}) }
+  const fired = []
+  const today = dayOf(now)
+
+  for (const u of people) {
+    if (u.role !== 'driver' || u.active === false || !u.licenseExpiry) continue
+    const daysLeft = Math.ceil((Date.parse(u.licenseExpiry) - Date.parse(today)) / 864e5)
+    if (!Number.isFinite(daysLeft)) continue
+
+    const vehicle = fleet.find((v) => v.id === u.vehicleId) ?? null
+    /* a driver with no vehicle is covered only by a rule for the whole fleet */
+    for (const rule of rulesFor(ruleList, 'license', vehicle?.id ?? null)) {
+      if (daysLeft > (rule.threshold ?? 30)) continue
+      const stage = daysLeft < 0 ? 'expired' : 'soon'
+      const seat = `${rule.id}:${u.id}:${u.licenseExpiry}:${stage}`
+      if (done[seat]) continue
+      done[seat] = today
+
+      fired.push({
+        id: `lic-${u.id}-${rule.id}-${now}-${stage}`,
+        ruleId: rule.id,
+        type: 'license',
+        severity: daysLeft < 0 ? 'high' : (rule.severity ?? 'medium'),
+        channels: rule.channels ?? ['web'],
+        vehicleId: vehicle?.id ?? null,
+        plate: vehicle?.plate ?? null,
+        driverId: u.id,
+        driverName: u.nameAr ?? null,
+        detail: daysLeft < 0 ? `${u.nameAr} — انتهت الرخصة` : `${u.nameAr} — باقي ${daysLeft} يوم`,
+        value: daysLeft,
+        zoneId: null,
+        lat: null,
+        lng: null,
+        at: new Date(now).toISOString(),
+        read: false,
+      })
+    }
+  }
+
+  await set(LICENSE_SENT, done)
+  if (fired.length) {
+    await mutate(INBOX, (current) => fired.concat(Array.isArray(current) ? current : []).slice(0, INBOX_LIMIT))
+    await countFired(fired)
+  }
+  return fired
 }

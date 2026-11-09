@@ -5,7 +5,7 @@ import {
   Wrench, Droplets, CircleDot, Disc3, ClipboardCheck, BatteryCharging, Filter, AlertTriangle, Check, Info,
   KeyRound, Gauge, Map as MapIcon, History, FileBarChart, Bell, RotateCcw, X,
   UserRound, Mail, Phone, Lock, Languages, Sun, Moon, CalendarDays,
-  Headset, MessageSquare, MessagesSquare, Send,
+  Headset, MessageSquare, MessagesSquare, Send, IdCard,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
@@ -22,6 +22,7 @@ import { APP_PAGES as PAGE_KEYS, ROLE_PAGES, pagesFor } from '../../../shared/ap
 const TABS = [
   { key: 'overview', icon: LayoutGrid, label: 'mng.overview', descAr: 'ملخص الأسطول', descEn: 'Fleet summary' },
   { key: 'users', icon: Users2, label: 'mng.users', descAr: 'الحسابات والصلاحيات', descEn: 'Accounts & roles' },
+  { key: 'drivers', icon: IdCard, label: 'mng.drivers', descAr: 'السائقون ورخصهم', descEn: 'Drivers & licences' },
   { key: 'devices', icon: Truck, label: 'mng.devices', descAr: 'المركبات والأجهزة', descEn: 'Vehicles & trackers' },
   { key: 'groups', icon: FolderTree, label: 'mng.groups', descAr: 'الفروع والمجموعات', descEn: 'Branches & groups' },
   { key: 'maint', icon: Wrench, label: 'mng.maint', descAr: 'جدولة وصيانة الأسطول', descEn: 'Fleet service schedule' },
@@ -56,7 +57,7 @@ const APP_PAGES = PAGE_KEYS.map((key) => ({ key, ...PAGE_META[key] }))
  * على الشاشات الضيّقة تُترك الصفحة تتمرّر كما هي: تقييد الارتفاع هناك يترك
  * للصفوف نافذة أضيق من أن تُقرأ.
  */
-const FULL_HEIGHT_TABS = new Set(['users', 'devices', 'groups', 'maint', 'perms'])
+const FULL_HEIGHT_TABS = new Set(['users', 'drivers', 'devices', 'groups', 'maint', 'perms'])
 /** بطاقة الجدول: تبتلع ما تبقّى من عمود المحتوى */
 const TABLE_CARD = 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col'
 /** الجدول نفسه: يتمرّر داخل بطاقته */
@@ -93,6 +94,7 @@ const opensDashboard = (u) => u.role !== 'driver'
 /** العدّاد المعروض بجانب كل قسم في الشريط الجانبي */
 const TAB_COUNT = {
   users: ({ users }) => users.length,
+  drivers: ({ users }) => users.filter((u) => u.role === 'driver').length,
   devices: ({ vehicles }) => vehicles.length,
   groups: ({ groups }) => groups.length,
   maint: ({ maintenance }) => maintenance.length,
@@ -105,7 +107,28 @@ const TAB_COUNT = {
 /** الأقسام التي يصبح عدّادها تحذيريًّا — رقم أحمر يعني «هنا ما ينتظرك» */
 const TAB_ALERT = {
   support: ({ support }) => support.unread > 0,
+  /* a lapsed or lapsing licence is something to act on */
+  drivers: ({ users }) => users.some((u) => u.role === 'driver' && ['expired', 'soon'].includes(licenseState(u.licenseExpiry))),
 }
+
+/** How many days a licence has left; `null` when no expiry is on record. */
+function licenseDaysLeft(expiry, now = Date.now()) {
+  if (!expiry) return null
+  const t = Date.parse(expiry)
+  if (!Number.isFinite(t)) return null
+  return Math.ceil((t - now) / 864e5)
+}
+
+/** none · expired · soon (30 days or less) · ok */
+function licenseState(expiry) {
+  const d = licenseDaysLeft(expiry)
+  if (d == null) return 'none'
+  if (d < 0) return 'expired'
+  return d <= 30 ? 'soon' : 'ok'
+}
+
+const LICENSE_TONE = { expired: 'red', soon: 'amber', ok: 'brand', none: 'slate' }
+
 
 /** الأدوار التي تملك تعديل إعدادات الأسطول — نفس القائمة التي يفرضها السيرفر. */
 const WRITE_ROLES = ['superadmin', 'admin']
@@ -146,6 +169,7 @@ export default function Management() {
   const blankDraft = (type) =>
     ({
       user: { nameAr: '', nameEn: '', username: '', email: '', role: 'viewer', groupId: groups[0]?.id ?? 1, active: true, password: '' },
+      driver: { nameAr: '', nameEn: '', username: '', email: '', phone: '', role: 'driver', groupId: groups[0]?.id ?? 1, vehicleId: '', nationalId: '', licenseNumber: '', licenseExpiry: '', active: true, password: '' },
       device: { plate: '', modelAr: '', modelEn: '', driverAr: '', driverEn: '', imei: '', sim: '', simExpiry: '', groupId: groups[0]?.id ?? 1, speedLimit: 120, active: true },
       group: { nameAr: '', nameEn: '', cityAr: '', cityEn: '', managerAr: '', managerEn: '' },
       maint: { vehicleId: vehicles[0]?.id, type: 'oil', kind: 'odometer', period: 10000, cost: 0, vendorAr: '', vendorEn: '' },
@@ -153,8 +177,10 @@ export default function Management() {
 
   const openModal = (type, row) => {
     setFormError(null)
-    setDraft(row ? { ...row, ...(type === 'user' ? { password: '' } : null) } : blankDraft(type))
-    setModal({ type, row })
+    setDraft(row ? { ...row, ...(type === 'user' || type === 'driver' ? { password: '' } : null) } : blankDraft(type))
+    /* a driver is an account like any other — the same form and the same save,
+       opened with the driver's fields */
+    setModal({ type: type === 'driver' ? 'user' : type, row, driver: type === 'driver' })
   }
 
   /** Save whichever form is open. Each one knows only its own writer. */
@@ -276,6 +302,24 @@ export default function Management() {
   const dashboardUsers = users.filter(opensDashboard)
   const filteredDashboardUsers = filteredUsers.filter(opensDashboard)
 
+  /* السائقون: حسابات بدور «سائق» — الأقرب انتهاءً لرخصته أولًا */
+  const drivers = users
+    .filter((u) => u.role === 'driver')
+    .sort((a, b) => (licenseDaysLeft(a.licenseExpiry) ?? 1e9) - (licenseDaysLeft(b.licenseExpiry) ?? 1e9))
+  const filteredDrivers = drivers.filter(
+    (u) =>
+      !q ||
+      u.nameEn.toLowerCase().includes(q) ||
+      u.nameAr.includes(query) ||
+      u.username.includes(q) ||
+      (u.nationalId ?? '').includes(q) ||
+      (u.phone ?? '').includes(q) ||
+      (vehicles.find((v) => v.id === u.vehicleId)?.plate ?? '').toLowerCase().includes(q),
+  )
+  const driversExpired = drivers.filter((u) => licenseState(u.licenseExpiry) === 'expired').length
+  const driversSoon = drivers.filter((u) => licenseState(u.licenseExpiry) === 'soon').length
+  const driversAssigned = drivers.filter((u) => u.vehicleId).length
+
   const filteredVehicles = vehicles.filter(
     (v) => !q || v.plate.toLowerCase().includes(q) || v.imei.includes(q) || v.modelEn.toLowerCase().includes(q),
   )
@@ -333,9 +377,9 @@ export default function Management() {
     : 0
 
   const addLabel = {
-    users: t('mng.addUser'), devices: t('mng.addDevice'), groups: t('mng.addGroup'), maint: t('mng.addMaint'),
+    users: t('mng.addUser'), drivers: t('mng.addDriver'), devices: t('mng.addDevice'), groups: t('mng.addGroup'), maint: t('mng.addMaint'),
   }[tab]
-  const modalKey = { users: 'user', devices: 'device', groups: 'group', maint: 'maint' }[tab]
+  const modalKey = { users: 'user', drivers: 'driver', devices: 'device', groups: 'group', maint: 'maint' }[tab]
 
   // عنوان القسم المعروض أعلى عمود المحتوى
   const activeTab = TABS.find((tb) => tb.key === tab)
@@ -749,6 +793,95 @@ export default function Management() {
           </>
         )}
 
+        {tab === 'drivers' && (
+          <>
+            <div className="shrink-0 grid gap-4 sm:grid-cols-3">
+              <MetricCard
+                icon={IdCard}
+                color="#00a97a"
+                label={lang === 'ar' ? 'إجمالي السائقين' : 'Total drivers'}
+                value={nf(drivers.length)}
+                hint={lang === 'ar' ? `${nf(driversAssigned)} مرتبط بمركبة` : `${nf(driversAssigned)} assigned to a vehicle`}
+              />
+              <MetricCard
+                icon={AlertTriangle}
+                color="#f5b301"
+                label={lang === 'ar' ? 'رخص تنتهي خلال ٣٠ يومًا' : 'Licences expiring in 30 days'}
+                value={nf(driversSoon)}
+                hint={lang === 'ar' ? 'جدّدها قبل انتهائها' : 'Renew before they lapse'}
+              />
+              <MetricCard
+                icon={AlertTriangle}
+                color="#f4634e"
+                label={lang === 'ar' ? 'رخص منتهية' : 'Expired licences'}
+                value={nf(driversExpired)}
+                hint={lang === 'ar' ? 'لا يجب أن يقود صاحبها' : 'Should not be driving'}
+              />
+            </div>
+
+            <Card className={cn('overflow-hidden', TABLE_CARD)}>
+              <CardHeader title={t('mng.drivers')} subtitle={`${nf(filteredDrivers.length)} ${t('rep.rows')}`} icon={IdCard} />
+              <Table
+                fit
+                className={TABLE_SCROLL}
+                columns={[
+                  { key: 'n', label: t('common.name'), width: '19%' },
+                  { key: 'i', label: lang === 'ar' ? 'رقم الهوية' : 'National ID', width: '13%' },
+                  { key: 'p', label: lang === 'ar' ? 'الجوال' : 'Phone', width: '12%' },
+                  { key: 'v', label: t('mng.vehicle'), width: '12%' },
+                  { key: 'l', label: lang === 'ar' ? 'رقم الرخصة' : 'Licence no.', width: '13%' },
+                  { key: 'e', label: lang === 'ar' ? 'انتهاء الرخصة' : 'Licence expiry', width: '17%' },
+                  { key: 'a', label: t('common.actions'), width: '10%', className: 'text-end' },
+                ]}
+                rows={filteredDrivers}
+                empty={lang === 'ar' ? 'لا يوجد سائقون — أضف أول سائق من الزر أعلاه' : 'No drivers yet — add one with the button above'}
+                renderRow={(u) => {
+                  const state = licenseState(u.licenseExpiry)
+                  const left = licenseDaysLeft(u.licenseExpiry)
+                  const plate = vehicles.find((v) => v.id === u.vehicleId)?.plate
+                  return (
+                    <>
+                      <Td>
+                        <span className="block font-extrabold">{lang === 'ar' ? u.nameAr : u.nameEn}</span>
+                        <span className="block text-[11px] text-muted" dir="ltr">{u.username}</span>
+                      </Td>
+                      <Td className="tabular-nums text-muted" dir="ltr">{u.nationalId || '—'}</Td>
+                      <Td className="tabular-nums text-muted" dir="ltr">{u.phone || '—'}</Td>
+                      <Td>
+                        {plate ? (
+                          <bdi dir="ltr" className="inline-flex rounded-md border border-[var(--s-border)] bg-[var(--s-panel-2)] px-2 py-0.5 text-[12px] font-extrabold tabular-nums">
+                            {plate}
+                          </bdi>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </Td>
+                      <Td className="tabular-nums text-muted" dir="ltr">{u.licenseNumber || '—'}</Td>
+                      <Td>
+                        {state === 'none' ? (
+                          <span className="text-[12px] text-muted">{lang === 'ar' ? 'غير مسجّل' : 'Not on record'}</span>
+                        ) : (
+                          <span className="flex flex-col items-start gap-1">
+                            <span className="text-[12px] font-bold tabular-nums">{formatDateTime(u.licenseExpiry, { dateStyle: 'medium' })}</span>
+                            <Badge tone={LICENSE_TONE[state]} dot>
+                              {state === 'expired'
+                                ? lang === 'ar' ? `منتهية منذ ${nf(-left)} يوم` : `Expired ${nf(-left)} days ago`
+                                : lang === 'ar' ? `باقي ${nf(left)} يوم` : `${nf(left)} days left`}
+                            </Badge>
+                          </span>
+                        )}
+                      </Td>
+                      <Td className="text-end">
+                        {canWrite && <RowActions onEdit={() => openModal('driver', u)} onDelete={() => removeUser(u)} />}
+                      </Td>
+                    </>
+                  )
+                }}
+              />
+            </Card>
+          </>
+        )}
+
         {tab === 'devices' && (
           <Card className={cn("overflow-hidden", TABLE_CARD)}>
             <CardHeader title={t('mng.devices')} subtitle={`${nf(filteredVehicles.length)} ${t('rep.rows')}`} icon={Truck} />
@@ -1135,7 +1268,7 @@ export default function Management() {
           modal?.row
             ? `${t('common.edit')} — ${editTitle(modal, lang)}`
             : {
-                user: t('mng.addUser'),
+                user: modal?.driver ? t('mng.addDriver') : t('mng.addUser'),
                 device: t('mng.addDevice'),
                 group: t('mng.addGroup'),
                 maint: t('mng.addMaint'),
@@ -2301,6 +2434,25 @@ function UserForm({ draft, setDraft, vehicles, groups, isNew }) {
           ))}
         </Select>
       </Field>
+
+      {/* the driver record: identity and licence. The licence date feeds the
+          drivers table and the «licence expiring» alert */}
+      {draft.role === 'driver' && (
+        <>
+          <Field label={lang === 'ar' ? 'الجوال' : 'Phone'}>
+            <Input dir="ltr" value={draft.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} placeholder="05xxxxxxxx" />
+          </Field>
+          <Field label={lang === 'ar' ? 'رقم الهوية / الإقامة' : 'National ID / Iqama'}>
+            <Input dir="ltr" value={draft.nationalId ?? ''} onChange={(e) => set({ nationalId: e.target.value })} />
+          </Field>
+          <Field label={lang === 'ar' ? 'رقم الرخصة' : 'Licence number'}>
+            <Input dir="ltr" value={draft.licenseNumber ?? ''} onChange={(e) => set({ licenseNumber: e.target.value })} />
+          </Field>
+          <Field label={lang === 'ar' ? 'تاريخ انتهاء الرخصة' : 'Licence expiry'}>
+            <Input type="date" dir="ltr" value={draft.licenseExpiry ?? ''} onChange={(e) => set({ licenseExpiry: e.target.value })} />
+          </Field>
+        </>
+      )}
 
       {/* only a driver drives something — the app reads this to know which
           vehicle the positions it sends belong to */}

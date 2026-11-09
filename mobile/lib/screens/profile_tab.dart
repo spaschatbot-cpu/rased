@@ -33,6 +33,29 @@ class ProfileTab extends StatelessWidget {
     return parts.take(2).map((p) => p.substring(0, 1)).join();
   }
 
+
+  static int? _daysLeft(String? expiry) {
+    if (expiry == null || expiry.isEmpty) return null;
+    final d = DateTime.tryParse(expiry);
+    if (d == null) return null;
+    final today = DateTime.now();
+    return d.difference(DateTime(today.year, today.month, today.day)).inDays;
+  }
+
+  static String _licenseText(String? expiry) {
+    final left = _daysLeft(expiry);
+    if (left == null) return tr('profile.license.none');
+    if (left < 0) return '$expiry · ${tr('profile.license.expired')}';
+    return '$expiry · ${tr1('profile.license.left', left)}';
+  }
+
+  static Color? _licenseTone(String? expiry) {
+    final left = _daysLeft(expiry);
+    if (left == null) return null;
+    if (left < 0) return Brand.danger;
+    return left <= 30 ? Brand.warn : Brand.green;
+  }
+
   @override
   Widget build(BuildContext context) {
     final vehicle = session.vehicleId;
@@ -100,6 +123,19 @@ class ProfileTab extends StatelessWidget {
             label: tr('profile.vehicle'),
             value: vehicleLabel,
             tone: vehicle == null ? Brand.danger : null,
+          ),
+          /* the licence the office recorded — red once it has lapsed, amber in
+             its last month, so the driver sees it before the office calls */
+          _Row(
+            icon: Icons.badge_outlined,
+            label: tr('profile.license'),
+            value: session.licenseNumber ?? tr('profile.license.none'),
+          ),
+          _Row(
+            icon: Icons.event_outlined,
+            label: tr('profile.licenseExpiry'),
+            value: _licenseText(session.licenseExpiry),
+            tone: _licenseTone(session.licenseExpiry),
           ),
         ]),
         const SizedBox(height: 14),
