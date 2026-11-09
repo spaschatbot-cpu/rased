@@ -203,11 +203,10 @@ class _TripCard extends StatelessWidget {
 }
 
 class _Line extends StatelessWidget {
-  const _Line({required this.icon, required this.text, this.ltr = false});
+  const _Line({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
-  final bool ltr;
 
   @override
   Widget build(BuildContext context) {
@@ -218,10 +217,7 @@ class _Line extends StatelessWidget {
           Icon(icon, size: 16, color: Brand.muted),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text,
-                textDirection: ltr ? TextDirection.ltr : null,
-                textAlign: ltr && AppLocale.isArabic ? TextAlign.right : null,
-                style: const TextStyle(fontSize: 13)),
+            child: Text(text, style: const TextStyle(fontSize: 13)),
           ),
         ],
       ),

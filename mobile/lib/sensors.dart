@@ -4,6 +4,7 @@
 ///
 /// A vehicle shows only the sensors its device actually reported, so a fuel
 /// probe or a door switch fitted later appears on its own.
+library;
 import 'package:flutter/material.dart';
 
 import 'i18n.dart';
