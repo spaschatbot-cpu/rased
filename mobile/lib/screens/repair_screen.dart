@@ -74,6 +74,7 @@ class _RepairScreenState extends State<RepairScreen> {
       final bytes = await file.readAsBytes();
       setState(() => _photo = 'data:image/jpeg;base64,${base64Encode(bytes)}');
     } catch (e) {
+      debugPrint('[repair] photo pick failed: $e');
       setState(() => _error = tr('repair.photoFailed'));
     }
   }

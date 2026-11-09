@@ -11,6 +11,13 @@
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>يواصل التطبيق إرسال موقع المركبة أثناء الوردية حتى لو كانت الشاشة مقفلة. يتوقف الإرسال فور إنهاء الوردية.</string>
 
+<!-- صورة العطل في «بلّغ عن عطل» — بدونهما يُغلق iOS التطبيق عند فتح الكاميرا أو المعرض -->
+<key>NSCameraUsageDescription</key>
+<string>لتصوير العطل وإرفاق الصورة بالبلاغ المرسل إلى الإدارة.</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>لاختيار صورة العطل من المعرض وإرفاقها بالبلاغ.</string>
+
 <key>UIBackgroundModes</key>
 <array>
   <string>location</string>
