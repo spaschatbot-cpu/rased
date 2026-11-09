@@ -12,7 +12,7 @@ enum SensorKind { number, flag, choice, text }
 
 class SensorSpec {
   const SensorSpec(this.key, this.kind, this.ar, this.en, this.icon,
-      {this.unit = '', this.decimals = 0, this.on, this.off, this.values, this.alarm = false});
+      {this.unit = '', this.decimals = 0, this.on, this.off, this.values, this.alarm = false, this.extra = false});
 
   final String key;
   final SensorKind kind;
@@ -27,6 +27,9 @@ class SensorSpec {
 
   /// A flag that means trouble when it is on — shown in red.
   final bool alarm;
+
+  /// Few vehicles have it (a second to fourth probe) — listed only once reported.
+  final bool extra;
 
   String get label => AppLocale.isArabic ? ar : en;
 
@@ -69,14 +72,14 @@ const sensorSpecs = <SensorSpec>[
   SensorSpec('rpm', SensorKind.number, 'دورات المحرك', 'Engine RPM', Icons.speed_rounded, unit: 'rpm'),
   SensorSpec('coolant', SensorKind.number, 'حرارة المحرك', 'Coolant temp', Icons.device_thermostat_rounded,
       unit: '°C'),
-  SensorSpec('temperature', SensorKind.number, 'الحرارة ١', 'Temperature 1', Icons.thermostat_rounded,
+  SensorSpec('temperature', SensorKind.number, 'الحرارة', 'Temperature', Icons.thermostat_rounded,
       unit: '°C', decimals: 1),
   SensorSpec('temperature2', SensorKind.number, 'الحرارة ٢', 'Temperature 2', Icons.thermostat_rounded,
-      unit: '°C', decimals: 1),
+      unit: '°C', decimals: 1, extra: true),
   SensorSpec('temperature3', SensorKind.number, 'الحرارة ٣', 'Temperature 3', Icons.thermostat_rounded,
-      unit: '°C', decimals: 1),
+      unit: '°C', decimals: 1, extra: true),
   SensorSpec('temperature4', SensorKind.number, 'الحرارة ٤', 'Temperature 4', Icons.thermostat_rounded,
-      unit: '°C', decimals: 1),
+      unit: '°C', decimals: 1, extra: true),
   SensorSpec('humidity', SensorKind.number, 'الرطوبة', 'Humidity', Icons.water_drop_outlined, unit: '%'),
   SensorSpec('weight', SensorKind.number, 'الحمولة', 'Load weight', Icons.scale_rounded, unit: 'kg'),
   SensorSpec('gsm', SensorKind.number, 'إشارة الشبكة', 'GSM signal', Icons.signal_cellular_alt_rounded,
@@ -110,5 +113,5 @@ const sensorSpecs = <SensorSpec>[
 /// fitted device would add.
 List<(SensorSpec, Object?)> allSensors(Map<String, dynamic>? fix) => [
       for (final s in sensorSpecs)
-        if (!fixedSensors.contains(s.key)) (s, fix?[s.key] as Object?),
+        if (!fixedSensors.contains(s.key) && (!s.extra || fix?[s.key] != null)) (s, fix?[s.key] as Object?),
     ];

@@ -287,20 +287,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             ],
           ),
           /* كل الحساسات ظاهرة دائمًا — «—» لما لا يرسله جهاز هذه المركبة */
-          ...[
-            const SizedBox(height: 12),
-            _MetricGrid(
-              cells: [
-                for (final (spec, value) in sensors)
-                  _MetricCell(
-                    icon: spec.icon,
-                    label: spec.label,
-                    value: spec.format(value),
-                    tone: spec.isAlarm(value) ? Brand.danger : const Color(0xFF38BDF8),
-                  ),
-              ],
-            ),
-          ],
+          const SizedBox(height: 12),
+          _SensorGrid(sensors: sensors),
         ],
       ),
     );
@@ -889,6 +877,101 @@ class _Chip extends StatelessWidget {
         boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 8)],
       ),
       child: DefaultTextStyle.merge(style: TextStyle(color: Palette.text), child: child),
+    );
+  }
+}
+
+/// الحساسات، ثلاثة في كل صف: أيقونة فوق، الاسم، ثم القراءة. الخانة باهتة
+/// حين لا يرسل الجهاز قراءتها، وحمراء حين تنذر بشيء (باب مفتوح، تصادم).
+class _SensorGrid extends StatelessWidget {
+  const _SensorGrid({required this.sensors});
+
+  final List<(SensorSpec, Object?)> sensors;
+
+  @override
+  Widget build(BuildContext context) {
+    const sky = Color(0xFF38BDF8);
+    final reported = sensors.where((e) => e.$2 != null).length;
+
+    Widget cell((SensorSpec, Object?) e) {
+      final (spec, value) = e;
+      final on = value != null;
+      final alarm = spec.isAlarm(value);
+      final tone = alarm ? Brand.danger : (on ? sky : Palette.muted);
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: alarm ? Brand.danger.withValues(alpha: 0.08) : (on ? sky.withValues(alpha: 0.06) : Palette.panel),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: alarm ? Brand.danger.withValues(alpha: 0.4) : (on ? sky.withValues(alpha: 0.3) : Palette.border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(color: tone.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(10)),
+              child: Icon(spec.icon, size: 18, color: tone),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 28,
+              child: Text(spec.label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 10.5, height: 1.25, color: Palette.muted)),
+            ),
+            const SizedBox(height: 2),
+            Text(spec.format(value),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: on ? tone : Palette.muted)),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Palette.panel,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.sensors_rounded, size: 18, color: sky),
+              const SizedBox(width: 6),
+              Text(AppLocale.isArabic ? 'الحساسات' : 'Sensors',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+              const Spacer(),
+              Text(
+                AppLocale.isArabic ? '$reported من ${sensors.length}' : '$reported of ${sensors.length}',
+                style: TextStyle(fontSize: 11, color: Palette.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (var i = 0; i < sensors.length; i += 3) ...[
+            if (i > 0) const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var k = i; k < i + 3; k++) ...[
+                  if (k > i) const SizedBox(width: 8),
+                  Expanded(child: k < sensors.length ? cell(sensors[k]) : const SizedBox()),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

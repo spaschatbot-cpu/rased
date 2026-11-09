@@ -6,6 +6,9 @@
  * fuel probe, a cold-chain thermometer or a door switch fitted next month starts
  * appearing on its own, with no change here or anywhere else.
  *
+ * `extra` marks a sensor few vehicles have (a second, third or fourth probe):
+ * screens list it only once a device reports it.
+ *
  * The API uses `min`/`max`/`decimals` to clamp what it stores; the dashboard uses
  * the labels and units to show it. `ignition`, `power`, `battery`, `temperature`,
  * `humidity` and `sos` predate this list and are kept under the same names.
@@ -19,10 +22,10 @@ export const SENSORS = [
   { key: 'fuelUsed', kind: 'number', ar: 'الوقود المستهلك', en: 'Fuel used', unit: 'L', min: 0, max: 1e7, decimals: 1 },
   { key: 'rpm', kind: 'number', ar: 'دورات المحرك', en: 'Engine RPM', unit: 'rpm', min: 0, max: 20000, decimals: 0 },
   { key: 'coolant', kind: 'number', ar: 'حرارة المحرك', en: 'Coolant temp', unit: '°C', min: -60, max: 200, decimals: 0 },
-  { key: 'temperature', kind: 'number', ar: 'الحرارة ١', en: 'Temperature 1', unit: '°C', min: -60, max: 100, decimals: 1 },
-  { key: 'temperature2', kind: 'number', ar: 'الحرارة ٢', en: 'Temperature 2', unit: '°C', min: -60, max: 100, decimals: 1 },
-  { key: 'temperature3', kind: 'number', ar: 'الحرارة ٣', en: 'Temperature 3', unit: '°C', min: -60, max: 100, decimals: 1 },
-  { key: 'temperature4', kind: 'number', ar: 'الحرارة ٤', en: 'Temperature 4', unit: '°C', min: -60, max: 100, decimals: 1 },
+  { key: 'temperature', kind: 'number', ar: 'الحرارة', en: 'Temperature', unit: '°C', min: -60, max: 100, decimals: 1 },
+  { key: 'temperature2', extra: true, kind: 'number', ar: 'الحرارة ٢', en: 'Temperature 2', unit: '°C', min: -60, max: 100, decimals: 1 },
+  { key: 'temperature3', extra: true, kind: 'number', ar: 'الحرارة ٣', en: 'Temperature 3', unit: '°C', min: -60, max: 100, decimals: 1 },
+  { key: 'temperature4', extra: true, kind: 'number', ar: 'الحرارة ٤', en: 'Temperature 4', unit: '°C', min: -60, max: 100, decimals: 1 },
   { key: 'humidity', kind: 'number', ar: 'الرطوبة', en: 'Humidity', unit: '%', min: 0, max: 100, decimals: 0 },
   { key: 'weight', kind: 'number', ar: 'الحمولة', en: 'Load weight', unit: 'kg', min: 0, max: 200000, decimals: 0 },
   { key: 'gsm', kind: 'number', ar: 'إشارة الشبكة', en: 'GSM signal', unit: '/5', min: 0, max: 5, decimals: 0 },

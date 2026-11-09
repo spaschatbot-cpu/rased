@@ -383,7 +383,7 @@ export const translations = {
     'dash.topDrivers.none': 'لا توجد قيادة مسجّلة',
     'dash.topDrivers.noneHint': 'يظهر الترتيب بعد أن تسجّل المركبات مسافة كافية خلال الأسبوع.',
     'dash.noPosition': 'لم تُبلّغ بعد',
-    'veh.noSensor': '«—» تعني أن جهاز هذه المركبة لا يرسل هذه القراءة بعد — تظهر تلقائيًا عند تركيب جهاز يدعمها.',
+    'veh.noSensor': 'جهاز هذه المركبة لا يرسل حساسات بعد — تظهر القراءات تلقائيًا عند تركيب جهاز يدعمها.',
     'dash.score': 'التقييم',
 
     // ── live map ────────────────────────────────────────────────
@@ -1073,7 +1073,7 @@ export const translations = {
     'dash.topDrivers.none': 'No recorded driving',
     'dash.topDrivers.noneHint': 'The ranking appears once vehicles record enough distance this week.',
     'dash.noPosition': 'Not reported yet',
-    'veh.noSensor': "«—» means this vehicle's device does not send that reading yet — it appears on its own once a device that has it is fitted.",
+    'veh.noSensor': "This vehicle's device sends no sensors yet — readings appear on their own once a device that has them is fitted.",
     'dash.score': 'Score',
 
     'map.title': 'Live Map',

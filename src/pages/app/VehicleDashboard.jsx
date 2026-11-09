@@ -7,7 +7,8 @@ import {
 import {
   Truck, AlertTriangle, Clock, Zap, Fuel,
   Route as RouteIcon, Gauge, ArrowLeft, ArrowRight, Activity, MapPin, KeyRound, BatteryMedium, User,
-  FileText
+  FileText, Droplet, Droplets, Thermometer, Weight, Signal, DoorOpen, RefreshCw, ShieldCheck, ShieldAlert,
+  Unplug, CreditCard,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
@@ -52,6 +53,65 @@ const CELL_TONE = {
   violet: 'bg-violet-500/12 text-violet-600 dark:text-violet-400',
   slate: 'bg-[var(--s-panel-2)] text-[var(--s-text-muted)]',
   rose: 'bg-rose-500/12 text-rose-600 dark:text-rose-400',
+}
+
+const SENSOR_ICON = {
+  ignition: KeyRound,
+  batteryVoltage: BatteryMedium,
+  fuelUsed: Droplet,
+  rpm: Gauge,
+  coolant: Thermometer,
+  temperature: Thermometer,
+  temperature2: Thermometer,
+  temperature3: Thermometer,
+  temperature4: Thermometer,
+  humidity: Droplets,
+  weight: Weight,
+  gsm: Signal,
+  deviceOdometer: RouteIcon,
+  door: DoorOpen,
+  tank: Fuel,
+  mixer: RefreshCw,
+  seatbelt: ShieldCheck,
+  crash: ShieldAlert,
+  towing: Truck,
+  unplugged: Unplug,
+  harsh: AlertTriangle,
+  driverKey: CreditCard,
+}
+
+/** خانة حساس: أيقونة فوق، الاسم، ثم القراءة — باهتة حين لا يرسلها الجهاز */
+function SensorCell({ icon: Icon, label, value, reported, alarm, ltr }) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-colors',
+        alarm
+          ? 'border-rose-500/40 bg-rose-500/8'
+          : reported
+            ? 'border-sky-500/30 bg-sky-500/6'
+            : 'border-[var(--s-border)] bg-[var(--s-panel-2)]/50',
+      )}
+    >
+      <span
+        className={cn(
+          'grid size-9 place-items-center rounded-lg',
+          alarm ? CELL_TONE.rose : reported ? CELL_TONE.sky : CELL_TONE.slate,
+        )}
+      >
+        <Icon size={17} strokeWidth={2.4} />
+      </span>
+      <span className="line-clamp-2 min-h-[2.4em] text-[11.5px] font-bold leading-tight text-muted">{label}</span>
+      <span
+        className={cn(
+          'text-[14px] font-black tabular-nums',
+          alarm ? 'text-rose-600 dark:text-rose-400' : reported ? 'text-[var(--s-text)]' : 'text-muted',
+        )}
+      >
+        <bdi dir={ltr ? 'ltr' : undefined}>{value}</bdi>
+      </span>
+    </div>
+  )
 }
 
 function DetailCell({ icon: Icon, label, value, ltr, tone = 'slate', progress }) {
@@ -209,7 +269,8 @@ export default function VehicleDashboard() {
   }
   /* every sensor is listed, reported or not — one the device does not send
      reads «—», so the page shows what a fitted device would add */
-  const extraSensors = SENSORS.filter((x) => !FIXED_SENSORS.has(x.key))
+  const extraSensors = SENSORS.filter((x) => !FIXED_SENSORS.has(x.key) && (!x.extra || sensors[x.key] != null))
+  const reportedCount = extraSensors.filter((x) => sensors[x.key] != null).length
   const anyReported = SENSORS.some((x) => sensors[x.key] != null)
   const seenOn = vehicle.lastUpdate ? formatDateTime(vehicle.lastUpdate) : t('dash.noPosition')
 
@@ -461,18 +522,35 @@ export default function VehicleDashboard() {
             <DetailCell icon={RouteIcon} tone="sky" label={lang === 'ar' ? 'إجمالى المسافة' : 'Total Travelled'} value={`${nf(Math.round(vehicle.odometer))} ${t('common.km')}`} />
             <DetailCell icon={Clock} tone="brand" label={lang === 'ar' ? 'إجمالى وقت التشغيل' : 'Total Engine Hours'} value={`${nf(Math.round(vehicle.engineHours))} ${t('common.hours')}`} />
           </div>
-          <div className="grid grid-cols-2 gap-px border-t border-[var(--s-border)] bg-[var(--s-border)]">
-            {extraSensors.map((sn) => (
-              <DetailCell key={sn.key} icon={Activity} tone={sn.kind === 'bool' && sensors[sn.key] && ALARM_SENSORS.has(sn.key) ? 'rose' : 'slate'} label={lang === 'ar' ? sn.ar : sn.en} value={sensorText(sn.key)} ltr={sn.kind === 'text'} />
-            ))}
-          </div>
-          {!anyReported && (
-            <p className="border-t border-[var(--s-border)] px-5 py-2.5 text-[11px] font-semibold text-muted">
-              {t('veh.noSensor')}
-            </p>
-          )}
         </Card>
       </div>
+
+      {/* الحساسات — كلها ظاهرة، و«—» لما لا يرسله جهاز هذه المركبة */}
+      <Card className="overflow-hidden border-[var(--s-border-strong)] shadow-[var(--s-e2)]">
+        <CardHeader
+          title={lang === 'ar' ? 'الحساسات' : 'Sensors'}
+          subtitle={
+            anyReported
+              ? lang === 'ar' ? `${nf(reportedCount)} من ${nf(extraSensors.length)} يرسلها الجهاز` : `${nf(reportedCount)} of ${nf(extraSensors.length)} reported by the device`
+              : t('veh.noSensor')
+          }
+          icon={Activity}
+          tone="sky"
+        />
+        <div className="grid grid-cols-3 gap-3 p-4">
+          {extraSensors.map((sn) => (
+            <SensorCell
+              key={sn.key}
+              icon={SENSOR_ICON[sn.key] ?? Activity}
+              label={lang === 'ar' ? sn.ar : sn.en}
+              value={sensorText(sn.key)}
+              reported={sensors[sn.key] != null}
+              alarm={sensors[sn.key] === true && ALARM_SENSORS.has(sn.key)}
+              ltr={sn.kind === 'text'}
+            />
+          ))}
+        </div>
+      </Card>
       </>
       ) : (
       <>
