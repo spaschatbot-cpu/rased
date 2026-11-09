@@ -40,6 +40,7 @@ import history from './history.js'
 import maintenance from './maintenance.js'
 import messages from './messages.js'
 import positions from './positions.js'
+import repairs from './repairs.js'
 import reports from './reports.js'
 import shifts from './shifts.js'
 import site from './site.js'
@@ -67,6 +68,7 @@ export const ROUTES = {
   maintenance,
   messages,
   positions,
+  repairs,
   reports,
   shifts,
   site,

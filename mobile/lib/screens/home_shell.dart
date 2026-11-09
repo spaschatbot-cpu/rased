@@ -466,6 +466,7 @@ class _AlertTile extends StatelessWidget {
         'unplugged' => Icons.power_off_rounded,
         'harsh' => Icons.warning_amber_rounded,
         'license' => Icons.badge_outlined,
+        'repair' => Icons.build_circle_outlined,
         _ => Icons.info_outline,
       };
 

@@ -26,6 +26,7 @@ const TABS = [
   { key: 'devices', icon: Truck, label: 'mng.devices', descAr: 'المركبات والأجهزة', descEn: 'Vehicles & trackers' },
   { key: 'groups', icon: FolderTree, label: 'mng.groups', descAr: 'الفروع والمجموعات', descEn: 'Branches & groups' },
   { key: 'maint', icon: Wrench, label: 'mng.maint', descAr: 'جدولة وصيانة الأسطول', descEn: 'Fleet service schedule' },
+  { key: 'repairs', icon: ClipboardCheck, label: 'mng.repairs', descAr: 'أعطال يبلّغ عنها السائقون', descEn: 'Faults drivers report' },
   { key: 'perms', icon: KeyRound, label: 'mng.perms', descAr: 'صفحات كل موظف', descEn: 'Per-employee page access' },
   { key: 'support', icon: Headset, label: 'mng.support', descAr: 'رسائل السائقين', descEn: 'Messages from drivers' },
   { key: 'profile', icon: UserRound, label: 'mng.profile', descAr: 'بيانات حسابك', descEn: 'Your account details' },
@@ -57,7 +58,7 @@ const APP_PAGES = PAGE_KEYS.map((key) => ({ key, ...PAGE_META[key] }))
  * على الشاشات الضيّقة تُترك الصفحة تتمرّر كما هي: تقييد الارتفاع هناك يترك
  * للصفوف نافذة أضيق من أن تُقرأ.
  */
-const FULL_HEIGHT_TABS = new Set(['users', 'drivers', 'devices', 'groups', 'maint', 'perms'])
+const FULL_HEIGHT_TABS = new Set(['users', 'drivers', 'devices', 'groups', 'maint', 'repairs', 'perms'])
 /** بطاقة الجدول: تبتلع ما تبقّى من عمود المحتوى */
 const TABLE_CARD = 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col'
 /** الجدول نفسه: يتمرّر داخل بطاقته */
@@ -98,6 +99,8 @@ const TAB_COUNT = {
   devices: ({ vehicles }) => vehicles.length,
   groups: ({ groups }) => groups.length,
   maint: ({ maintenance }) => maintenance.length,
+  /* the new ones — the number that asks for the tab to be opened */
+  repairs: ({ repairs }) => repairs.open,
   perms: ({ users }) => users.filter(opensDashboard).length,
   /* غير المقروء أولًا: العدد الذي يستدعي فتح القسم هو ما ينتظر ردًّا، لا
      مجموع المحادثات التي أُغلقت منذ أسابيع */
@@ -107,6 +110,7 @@ const TAB_COUNT = {
 /** الأقسام التي يصبح عدّادها تحذيريًّا — رقم أحمر يعني «هنا ما ينتظرك» */
 const TAB_ALERT = {
   support: ({ support }) => support.unread > 0,
+  repairs: ({ repairs }) => repairs.open > 0,
   /* a lapsed or lapsing licence is something to act on */
   drivers: ({ users }) => users.some((u) => u.role === 'driver' && ['expired', 'soon'].includes(licenseState(u.licenseExpiry))),
 }
@@ -157,6 +161,7 @@ export default function Management() {
   /* محادثات الدعم تُقرأ هنا لا داخل القسم وحده: العدّاد بجانب «الدعم الفني»
      في الشريط الجانبي هو ما يجعل رسالة سائق تُرى قبل أن يفتح أحد القسم */
   const support = useSupportInbox(canWrite)
+  const repairs = useRepairs(canManage)
 
   /* Every one of these forms writes to the server now, so they all share one
      draft and one error slot: the dialog stays open and says what went wrong
@@ -412,7 +417,7 @@ export default function Management() {
               <nav className="flex gap-2 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:overflow-y-auto">
                 {tabs.map((tb) => {
                   const on = tab === tb.key
-                  const args = { users, vehicles, groups, maintenance, support }
+                  const args = { users, vehicles, groups, maintenance, support, repairs }
                   const count = TAB_COUNT[tb.key]?.(args)
                   const alarming = TAB_ALERT[tb.key]?.(args) ?? false
                   return (
@@ -1251,6 +1256,8 @@ export default function Management() {
 
         {tab === 'support' && <SupportSection inbox={support} query={query} />}
 
+        {tab === 'repairs' && <RepairsSection store={repairs} query={query} canWrite={canWrite} />}
+
         {tab === 'profile' && <ProfileSection groups={groups} />}
           </div>
         </div>
@@ -1697,6 +1704,219 @@ function MaintForm({ draft, setDraft, vehicles, isNew }) {
  * يعمل خارج قسم الدعم أيضًا، لأن عدّاد الشريط الجانبي يعتمد عليه: رسالة سائق
  * يجب أن تُرى وأنت في «المركبات»، لا حين تفتح القسم مصادفةً.
  */
+/* ── طلبات الإصلاح — يرفعها السائق من تطبيقه ─────────────────────── */
+
+const REPAIR_POLL_MS = 30000
+const REPAIR_STATUS_TONE = { open: 'red', inProgress: 'amber', done: 'brand', rejected: 'slate' }
+const REPAIR_STATUSES = ['open', 'inProgress', 'done', 'rejected']
+const REPAIR_LABEL = {
+  status: {
+    open: ['جديد', 'New'],
+    inProgress: ['قيد الإصلاح', 'In progress'],
+    done: ['تم الإصلاح', 'Fixed'],
+    rejected: ['مرفوض', 'Rejected'],
+  },
+  category: {
+    engine: ['المحرك', 'Engine'],
+    tires: ['الكفرات', 'Tyres'],
+    brakes: ['الفرامل', 'Brakes'],
+    electrical: ['الكهرباء', 'Electrical'],
+    ac: ['التكييف', 'A/C'],
+    accident: ['حادث', 'Accident'],
+    other: ['أخرى', 'Other'],
+  },
+}
+const repairLabel = (group, key, lang) => REPAIR_LABEL[group][key]?.[lang === 'ar' ? 0 : 1] ?? key
+
+/** الطلبات تُقرأ هنا لا داخل القسم وحده — عدّاد «الجديد» يظهر في الشريط الجانبي */
+function useRepairs(enabled) {
+  const [repairs, setRepairs] = useState([])
+  const reload = useCallback(
+    async (signal) => {
+      if (!enabled) return
+      try {
+        const data = await api.getRepairs(signal)
+        setRepairs(data.repairs ?? [])
+      } catch (err) {
+        if (err.name !== 'AbortError') console.warn('[repairs] load failed:', err.message)
+      }
+    },
+    [enabled],
+  )
+  useEffect(() => {
+    if (!enabled) return undefined
+    const ctrl = new AbortController()
+    reload(ctrl.signal)
+    const timer = setInterval(() => reload(), REPAIR_POLL_MS)
+    return () => {
+      ctrl.abort()
+      clearInterval(timer)
+    }
+  }, [enabled, reload])
+  return { repairs, setRepairs, reload, open: repairs.filter((r) => r.status === 'open').length }
+}
+
+function RepairsSection({ store, query, canWrite }) {
+  const { t, lang, nf, formatDateTime } = useLang()
+  const { repairs, setRepairs } = store
+  const [status, setStatus] = useState('all')
+  const [photo, setPhoto] = useState(null) // { id, src | null }
+  const [busy, setBusy] = useState(null)
+  const [error, setError] = useState(null)
+
+  const q = query.trim().toLowerCase()
+  const rows = repairs.filter((r) => {
+    if (status !== 'all' && r.status !== status) return false
+    if (!q) return true
+    return (
+      (r.plate ?? '').toLowerCase().includes(q) ||
+      (r.driverNameAr ?? '').includes(query) ||
+      (r.driverNameEn ?? '').toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q)
+    )
+  })
+  const count = (s) => repairs.filter((r) => r.status === s).length
+
+  const update = async (r, patch) => {
+    setBusy(r.id)
+    setError(null)
+    try {
+      const { repair } = await api.updateRepair(r.id, patch)
+      setRepairs((list) => list.map((x) => (x.id === r.id ? repair : x)))
+    } catch (err) {
+      setError(apiErrorText(err.message, t))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const askNote = (r) => {
+    const note = window.prompt(lang === 'ar' ? 'ردّك على السائق' : 'Your reply to the driver', r.note ?? '')
+    if (note != null) update(r, { note })
+  }
+
+  const showPhoto = async (r) => {
+    setPhoto({ id: r.id, src: null })
+    try {
+      const data = await api.getRepairPhoto(r.id)
+      setPhoto({ id: r.id, src: data.photo })
+    } catch (err) {
+      setPhoto(null)
+      setError(apiErrorText(err.message, t))
+    }
+  }
+
+  return (
+    <>
+      <div className="shrink-0 grid gap-4 sm:grid-cols-4">
+        <MetricCard icon={AlertTriangle} color="#f4634e" label={repairLabel('status', 'open', lang)} value={nf(count('open'))} hint={lang === 'ar' ? 'بانتظار المراجعة' : 'Waiting for review'} />
+        <MetricCard icon={Wrench} color="#f5b301" label={repairLabel('status', 'inProgress', lang)} value={nf(count('inProgress'))} hint={lang === 'ar' ? 'في الورشة' : 'At the workshop'} />
+        <MetricCard icon={Check} color="#00a97a" label={repairLabel('status', 'done', lang)} value={nf(count('done'))} hint={lang === 'ar' ? 'أُغلقت' : 'Closed'} />
+        <MetricCard icon={ClipboardCheck} color="#38a3ff" label={lang === 'ar' ? 'كل الطلبات' : 'All requests'} value={nf(repairs.length)} hint={lang === 'ar' ? 'من تطبيق السائق' : 'From the driver app'} />
+      </div>
+
+      <Card className={cn('overflow-hidden', TABLE_CARD)}>
+        <CardHeader
+          title={lang === 'ar' ? 'طلبات الإصلاح' : 'Repair requests'}
+          subtitle={`${nf(rows.length)} ${t('rep.rows')}`}
+          icon={Wrench}
+          action={
+            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-40 text-[12.5px]">
+              <option value="all">{t('common.all')}</option>
+              {REPAIR_STATUSES.map((s) => (
+                <option key={s} value={s}>{repairLabel('status', s, lang)}</option>
+              ))}
+            </Select>
+          }
+        />
+        {error && <p className="mx-5 mb-3 rounded-lg bg-[#f4634e]/12 px-3 py-2 text-[12.5px] font-bold text-[#e04b34]">{error}</p>}
+        <Table
+          fit
+          className={TABLE_SCROLL}
+          columns={[
+            { key: 'd', label: t('common.time'), width: '13%' },
+            { key: 'n', label: t('common.driver'), width: '14%' },
+            { key: 'v', label: t('mng.vehicle'), width: '10%' },
+            { key: 'c', label: lang === 'ar' ? 'النوع' : 'Type', width: '10%' },
+            { key: 'x', label: lang === 'ar' ? 'المشكلة' : 'Problem', width: '27%' },
+            { key: 'p', label: lang === 'ar' ? 'صورة' : 'Photo', width: '7%' },
+            { key: 's', label: t('common.status'), width: '19%' },
+          ]}
+          rows={rows}
+          empty={lang === 'ar' ? 'لا توجد طلبات — يرفعها السائق من التطبيق' : 'No requests — drivers file them from the app'}
+          renderRow={(r) => (
+            <>
+              <Td className="text-[12px] font-bold text-muted">{formatDateTime(r.createdAt)}</Td>
+              <Td className="font-extrabold">{lang === 'ar' ? r.driverNameAr : r.driverNameEn}</Td>
+              <Td>
+                {r.plate ? (
+                  <bdi dir="ltr" className="inline-flex rounded-md border border-[var(--s-border)] bg-[var(--s-panel-2)] px-2 py-0.5 text-[12px] font-extrabold tabular-nums">{r.plate}</bdi>
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
+              </Td>
+              <Td>
+                <Badge tone={r.category === 'accident' ? 'red' : 'sky'}>{repairLabel('category', r.category, lang)}</Badge>
+              </Td>
+              <Td className="text-[12.5px]">
+                <span className="line-clamp-2">{r.description}</span>
+                {r.note && (
+                  <span className="mt-1 block text-[11.5px] font-bold text-muted">
+                    {lang === 'ar' ? 'الرد: ' : 'Reply: '}{r.note}
+                  </span>
+                )}
+              </Td>
+              <Td>
+                {r.hasPhoto ? (
+                  <Button size="sm" variant="ghost" onClick={() => showPhoto(r)}>
+                    {lang === 'ar' ? 'عرض' : 'View'}
+                  </Button>
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
+              </Td>
+              <Td>
+                {canWrite ? (
+                  <span className="flex flex-col gap-1.5">
+                    <Select
+                      value={r.status}
+                      disabled={busy === r.id}
+                      onChange={(e) => update(r, { status: e.target.value })}
+                      className="h-8 text-[12px]"
+                    >
+                      {REPAIR_STATUSES.map((s) => (
+                        <option key={s} value={s}>{repairLabel('status', s, lang)}</option>
+                      ))}
+                    </Select>
+                    <button type="button" onClick={() => askNote(r)} className="text-start text-[11.5px] font-bold text-brand-600 hover:underline dark:text-brand-400">
+                      {r.note ? (lang === 'ar' ? 'تعديل الرد' : 'Edit reply') : lang === 'ar' ? 'أضف ردًّا للسائق' : 'Reply to driver'}
+                    </button>
+                  </span>
+                ) : (
+                  <Badge tone={REPAIR_STATUS_TONE[r.status]} dot>{repairLabel('status', r.status, lang)}</Badge>
+                )}
+              </Td>
+            </>
+          )}
+        />
+      </Card>
+
+      <Modal
+        open={Boolean(photo)}
+        onClose={() => setPhoto(null)}
+        title={lang === 'ar' ? 'صورة العطل' : 'Fault photo'}
+        footer={<Button variant="ghost" onClick={() => setPhoto(null)}>{t('common.close')}</Button>}
+      >
+        {photo?.src ? (
+          <img src={photo.src} alt="" className="mx-auto max-h-[70vh] rounded-xl" />
+        ) : (
+          <p className="py-10 text-center text-muted">{photo && !photo.src ? t('common.loading') : ''}</p>
+        )}
+      </Modal>
+    </>
+  )
+}
+
 function useSupportInbox(enabled) {
   const [threads, setThreads] = useState([])
   const [unread, setUnread] = useState(0)

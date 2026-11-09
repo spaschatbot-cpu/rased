@@ -21,6 +21,9 @@ class Tracker extends ChangeNotifier {
         _store = store;
 
   final ApiClient _api;
+
+  /// For screens that talk to the server as the signed-in driver.
+  ApiClient get api => _api;
   final SessionStore _store;
   final FixQueue _queue = FixQueue();
 
@@ -141,6 +144,41 @@ class Tracker extends ChangeNotifier {
     session = null;
     pending = 0;
     _publish();
+  }
+
+  /// استغاثة: موقع السائق الآن، يُرسل فورًا لا عبر القائمة، ومعه علامة
+  /// الاستغاثة فيرفع السيرفر تنبيه «استغاثة» لدى الإدارة. يعمل والوردية
+  /// متوقفة أيضًا — الطوارئ لا تنتظر بدء الوردية. يعيد `null` عند النجاح
+  /// أو نص الخطأ.
+  Future<String?> sendSos() async {
+    final token = session?.token;
+    if (token == null) return tr('sos.failed');
+    try {
+      Position? p = lastFix;
+      final stale = p == null || DateTime.now().difference(p.timestamp).inMinutes >= 2;
+      if (stale) {
+        if (!await _ensurePermission()) return error ?? tr('sos.failed');
+        p = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        ).timeout(const Duration(seconds: 15));
+      }
+      await _api.sendFixes([
+        {
+          'lat': p.latitude,
+          'lng': p.longitude,
+          'speed': (p.speed.isNaN ? 0 : p.speed * 3.6).round(),
+          'heading': (p.heading.isNaN || p.heading < 0 ? 0 : p.heading).round(),
+          'accuracy': p.accuracy.isNaN ? 0 : p.accuracy.round(),
+          'at': DateTime.now().toUtc().toIso8601String(),
+          'sos': true,
+        }
+      ], token);
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    } catch (_) {
+      return tr('sos.failed');
+    }
   }
 
   /// ───────────────────────── الأذونات ─────────────────────────

@@ -32,6 +32,7 @@ export const ALERT_ICON = {
   unplugged: Unplug,
   harsh: Activity,
   license: IdCard,
+  repair: Wrench,
 }
 
 export const ALERT_TONE = {

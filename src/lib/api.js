@@ -146,6 +146,10 @@ export const api = {
 
   /* technical support — one thread per driver, written from the driver app */
   getSupportThreads: (signal) => request('/support', { signal }),
+  /* repair requests filed from the driver app */
+  getRepairs: (signal) => request('/repairs', { signal }),
+  getRepairPhoto: (id) => request(`/repairs?photo=${encodeURIComponent(id)}`),
+  updateRepair: (id, patch) => request(`/repairs?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: patch }),
   getSupportThread: (driverId, signal) => request(`/support?driver=${driverId}`, { signal }),
   replySupport: (driverId, text) =>
     request('/support', { method: 'POST', body: { driver: driverId, text } }),

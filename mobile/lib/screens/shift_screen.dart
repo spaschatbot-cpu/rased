@@ -6,6 +6,7 @@ import '../i18n.dart';
 import '../services/tracker.dart';
 import '../theme.dart';
 import '../widgets/location_map.dart';
+import 'repair_screen.dart';
 
 /// شاشة الوردية.
 ///
@@ -81,6 +82,8 @@ class _ShiftScreenState extends State<ShiftScreen> with SingleTickerProviderStat
                                     t.needsAttention ? Geolocator.openAppSettings : null,
                               ),
                             ],
+                            SizedBox(height: compact ? 16 : 22),
+                            _DriverActions(tracker: t),
                             SizedBox(height: compact ? 14 : 20),
                             _Hint(running: running, locating: t.isLocating),
                           ],
@@ -88,6 +91,95 @@ class _ShiftScreenState extends State<ShiftScreen> with SingleTickerProviderStat
                       ),
                     ),
                   );
+  }
+}
+
+/// زرّا السائق تحت الحالة: الطوارئ والإبلاغ عن عطل.
+class _DriverActions extends StatefulWidget {
+  const _DriverActions({required this.tracker});
+
+  final Tracker tracker;
+
+  @override
+  State<_DriverActions> createState() => _DriverActionsState();
+}
+
+class _DriverActionsState extends State<_DriverActions> {
+  bool _sos = false;
+
+  Future<void> _confirmSos() async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Brand.panel,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(tr('sos.title'), style: const TextStyle(fontWeight: FontWeight.w900, color: Brand.danger)),
+        content: Text(tr('sos.confirm'), style: const TextStyle(fontSize: 13.5, color: Brand.muted)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('shift.cancel'))),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Brand.danger),
+            child: Text(tr('sos.send')),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    setState(() => _sos = true);
+    final failure = await widget.tracker.sendSos();
+    if (!mounted) return;
+    setState(() => _sos = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: failure == null ? Brand.green : Brand.danger,
+      content: Text(failure ?? tr('sos.sent')),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget button({required IconData icon, required String label, required Color tone, VoidCallback? onTap, bool busy = false}) =>
+        Expanded(
+          child: Material(
+            color: tone.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: busy ? null : onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: tone.withValues(alpha: 0.45)),
+                ),
+                child: Column(
+                  children: [
+                    busy
+                        ? SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.5, color: tone))
+                        : Icon(icon, size: 26, color: tone),
+                    const SizedBox(height: 6),
+                    Text(label, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: tone)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+    return Row(
+      children: [
+        button(icon: Icons.sos_rounded, label: tr('sos.button'), tone: Brand.danger, onTap: _confirmSos, busy: _sos),
+        const SizedBox(width: 12),
+        button(
+          icon: Icons.build_circle_outlined,
+          label: tr('repair.button'),
+          tone: Brand.warn,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => RepairScreen(tracker: widget.tracker, api: widget.tracker.api),
+          )),
+        ),
+      ],
+    );
   }
 }
 

@@ -90,6 +90,22 @@ class ApiClient {
     return _send('POST', '/track', body: body, token: token);
   }
 
+  /// طلبات الإصلاح التي رفعها هذا السائق — الأحدث أولًا.
+  Future<List<Map<String, dynamic>>> repairs(String token) async {
+    final data = await _send('GET', '/repairs', token: token);
+    return ((data['repairs'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  /// بلاغ عطل: النوع، الوصف، وصورة اختيارية (data URL).
+  Future<void> fileRepair(String token,
+      {required String category, required String description, String? photo}) {
+    return _send('POST', '/repairs', token: token, body: {
+      'category': category,
+      'description': description,
+      if (photo != null) 'photo': photo,
+    });
+  }
+
   /// إنهاء الوردية — تختفي المركبة من الخريطة الحية فورًا.
   Future<void> endShift(String token) => _send('DELETE', '/track', token: token);
 
