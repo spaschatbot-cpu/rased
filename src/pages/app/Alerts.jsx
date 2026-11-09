@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Bell, Gauge, PlugZap, Siren, LogIn, LogOut, KeyRound, Timer, BatteryLow,
   Wrench, Plus, Trash2, CheckCheck, Mail, AlertTriangle, Send, User,
-  Thermometer, Snowflake, Fuel, TrendingDown, DoorOpen, Droplets, Truck, Unplug, ShieldAlert, Activity,
+  Thermometer, Snowflake, Fuel, TrendingDown, DoorOpen, Droplets, Unplug, Activity,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
@@ -29,9 +29,7 @@ export const ALERT_ICON = {
   fuelDrop: TrendingDown,
   door: DoorOpen,
   tank: Droplets,
-  towing: Truck,
   unplugged: Unplug,
-  crash: ShieldAlert,
   harsh: Activity,
 }
 
@@ -47,7 +45,7 @@ const ALERT_TYPES = [
   'speed', 'power', 'sos', 'geofenceIn', 'geofenceOut',
   'ignitionOn', 'ignitionOff', 'idle', 'lowBattery', 'maintenance',
   /* these need a device with the matching sensor, and stay silent until one reports */
-  'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop', 'door', 'tank', 'towing', 'unplugged', 'crash', 'harsh',
+  'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop', 'door', 'tank', 'unplugged', 'harsh',
 ]
 
 /* a sensible starting threshold when the operator picks a type */

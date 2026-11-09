@@ -14,7 +14,7 @@
  *   speed   — one row per speeding episode
  *   sfda    — cold-chain temperatures; only rows for fixes that carried one
  *   fuel    — one row per vehicle with a fuel sensor: levels, refills, drops
- *   sensors — one row per sensor event: a door opening, a crash, harsh braking
+ *   sensors — one row per sensor event: a door opening, harsh braking
  */
 import { handler, ok } from '../_lib/http.js'
 import { requireUser } from '../_lib/auth.js'
@@ -367,7 +367,7 @@ export default handler({
         : {
             sfda: 'no temperature-capable device reported in this range',
             fuel: 'no fuel-sensor device reported in this range',
-            sensors: 'no device with door, crash or driving-behaviour sensors reported in this range',
+            sensors: 'no device with door or driving-behaviour sensors reported in this range',
           }[type] ?? null,
     })
   },

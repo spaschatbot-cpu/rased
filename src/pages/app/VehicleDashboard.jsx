@@ -7,7 +7,7 @@ import {
 import {
   Truck, AlertTriangle, Clock, Zap, Fuel,
   Route as RouteIcon, Gauge, ArrowLeft, ArrowRight, Activity, MapPin, KeyRound, BatteryMedium, User,
-  FileText, Droplet, Droplets, Thermometer, Weight, DoorOpen, RefreshCw, ShieldAlert,
+  FileText, Droplet, Droplets, Thermometer, Weight, DoorOpen, RefreshCw,
   Unplug, CreditCard,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
@@ -24,7 +24,7 @@ import { SENSORS, formatSensor } from '../../../shared/sensors'
 /* shown in their own fixed cells above, not in the list of extra sensors */
 const FIXED_SENSORS = new Set(['power', 'fuel', 'fuelLiters'])
 /* readings that mean something is wrong when they are on */
-const ALARM_SENSORS = new Set(['crash', 'towing', 'unplugged', 'door', 'tank'])
+const ALARM_SENSORS = new Set(['unplugged', 'door', 'tank'])
 
 const AXIS_TICK = { fill: 'var(--s-text-muted)', fontSize: 11 }
 
@@ -67,8 +67,6 @@ const SENSOR_ICON = {
   door: DoorOpen,
   tank: Fuel,
   mixer: RefreshCw,
-  crash: ShieldAlert,
-  towing: Truck,
   unplugged: Unplug,
   harsh: AlertTriangle,
   driverKey: CreditCard,

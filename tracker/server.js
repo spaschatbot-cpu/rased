@@ -90,8 +90,6 @@ function ioFields(el) {
 
   /* green driving: 1 acceleration, 2 braking, 3 cornering */
   if (has(253)) out.harsh = { 1: 'accel', 2: 'brake', 3: 'corner' }[num(253)]
-  if (has(247) && num(247) > 0) out.crash = true
-  if (has(246)) out.towing = num(246) === 1
   if (has(252)) out.unplugged = num(252) === 1
   if (has(78) && num(78) !== 0) out.driverKey = BigInt(el[78]).toString(16).toUpperCase()
 

@@ -144,9 +144,7 @@ const _ar = <String, String>{
   'alert.fuelDrop': 'نقص مفاجئ في الوقود',
   'alert.door': 'فتح الباب',
   'alert.tank': 'فتح غطاء الخزان',
-  'alert.towing': 'سحب المركبة',
   'alert.unplugged': 'فصل جهاز التتبع',
-  'alert.crash': 'تصادم',
   'alert.harsh': 'قيادة عنيفة',
 
   /* التبويبات */
@@ -465,9 +463,7 @@ const _en = <String, String>{
   'alert.fuelDrop': 'Sudden fuel drop',
   'alert.door': 'Door opened',
   'alert.tank': 'Tank lid opened',
-  'alert.towing': 'Towing',
   'alert.unplugged': 'Tracker unplugged',
-  'alert.crash': 'Crash',
   'alert.harsh': 'Harsh driving',
 
   'tab.home': 'Home',

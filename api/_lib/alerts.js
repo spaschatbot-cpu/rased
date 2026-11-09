@@ -36,7 +36,7 @@ const MOVING_KMH = 4
 
 /* things that happen rather than states that hold: each report is its own
    event, so the latch that stops a held condition repeating does not apply */
-const ONE_SHOT = new Set(['sos', 'crash', 'harsh'])
+const ONE_SHOT = new Set(['sos', 'harsh'])
 
 /* ── the conditions ──────────────────────────────────────────────── */
 
@@ -132,9 +132,7 @@ export function evaluate(fix, previous, { vehicle, zones = [], memory = {} }) {
   }
   if (fix.door) events.push({ type: 'door', detail: null })
   if (fix.tank) events.push({ type: 'tank', detail: null })
-  if (fix.towing) events.push({ type: 'towing', detail: null })
   if (fix.unplugged) events.push({ type: 'unplugged', detail: null })
-  if (fix.crash) events.push({ type: 'crash', detail: null })
   if (fix.harsh) events.push({ type: 'harsh', detail: HARSH_LABEL[fix.harsh]?.[0] ?? fix.harsh })
 
   return { events, memory: { zones: insideNow, stoppedSince, at: fix.at } }

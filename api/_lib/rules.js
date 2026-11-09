@@ -30,9 +30,7 @@ export const RULE_TYPES = [
   'fuelDrop',     // threshold = percent lost between two reports
   'door',         // a door opened
   'tank',         // the fuel-tank lid opened
-  'towing',       // moved with the ignition off
   'unplugged',    // tracker disconnected from the vehicle
-  'crash',        // impact detected by the tracker
   'harsh',        // harsh acceleration, braking or cornering
 ]
 

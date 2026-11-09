@@ -83,10 +83,6 @@ const sensorSpecs = <SensorSpec>[
       on: ('مفتوح', 'Open'), off: ('مغلق', 'Closed'), alarm: true),
   SensorSpec('mixer', SensorKind.flag, 'الخلاطة', 'Mixer drum', Icons.autorenew_rounded,
       on: ('تدور', 'Rotating'), off: ('متوقفة', 'Stopped')),
-  SensorSpec('crash', SensorKind.flag, 'تصادم', 'Crash', Icons.car_crash_rounded,
-      on: ('تم رصد تصادم', 'Detected'), off: ('لا', 'No'), alarm: true),
-  SensorSpec('towing', SensorKind.flag, 'سحب المركبة', 'Towing', Icons.rv_hookup_rounded,
-      on: ('يتم سحبها', 'Being towed'), off: ('لا', 'No'), alarm: true),
   SensorSpec('unplugged', SensorKind.flag, 'فصل الجهاز', 'Device unplugged', Icons.power_off_rounded,
       on: ('مفصول', 'Unplugged'), off: ('متصل', 'Connected'), alarm: true),
   SensorSpec('harsh', SensorKind.choice, 'قيادة عنيفة', 'Harsh driving', Icons.warning_amber_rounded, values: {

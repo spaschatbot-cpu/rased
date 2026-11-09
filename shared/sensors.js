@@ -28,8 +28,6 @@ export const SENSORS = [
   { key: 'door', kind: 'bool', ar: 'الباب', en: 'Door', on: ['مفتوح', 'Open'], off: ['مغلق', 'Closed'] },
   { key: 'tank', kind: 'bool', ar: 'غطاء الخزان', en: 'Tank lid', on: ['مفتوح', 'Open'], off: ['مغلق', 'Closed'] },
   { key: 'mixer', kind: 'bool', ar: 'الخلاطة', en: 'Mixer drum', on: ['تدور', 'Rotating'], off: ['متوقفة', 'Stopped'] },
-  { key: 'crash', kind: 'bool', ar: 'تصادم', en: 'Crash', on: ['تم رصد تصادم', 'Detected'], off: ['لا', 'No'] },
-  { key: 'towing', kind: 'bool', ar: 'سحب المركبة', en: 'Towing', on: ['يتم سحبها', 'Being towed'], off: ['لا', 'No'] },
   { key: 'unplugged', kind: 'bool', ar: 'فصل الجهاز', en: 'Device unplugged', on: ['مفصول', 'Unplugged'], off: ['متصل', 'Connected'] },
   { key: 'harsh', kind: 'enum', ar: 'قيادة عنيفة', en: 'Harsh driving',
     values: { accel: ['تسارع مفاجئ', 'Harsh acceleration'], brake: ['فرملة مفاجئة', 'Harsh braking'], corner: ['انعطاف حاد', 'Harsh cornering'] } },
