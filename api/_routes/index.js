@@ -40,6 +40,7 @@ import history from './history.js'
 import maintenance from './maintenance.js'
 import messages from './messages.js'
 import positions from './positions.js'
+import pricing from './pricing.js'
 import repairs from './repairs.js'
 import routesSaved from './routes.js'
 import reports from './reports.js'
@@ -71,6 +72,7 @@ export const ROUTES = {
   maintenance,
   messages,
   positions,
+  pricing,
   repairs,
   routes: routesSaved,
   reports,

@@ -12,11 +12,13 @@
  *                stored, under `workOrderId:date`.
  */
 import { collection, num, text } from './collection.js'
-import { get, mutate } from './store.js'
+import { get, mutate, set } from './store.js'
 
 export const WORK_ORDER_TYPES = ['fieldSupervision', 'siteSupply', 'distribution', 'expressDelivery', 'transport', 'landTransport']
 export const RECURSIONS = ['once', 'weekly', 'interval']
 export const TRIP_STATUSES = ['scheduled', 'started', 'completed', 'cancelled']
+/** A price is either per trip or per kilometre of the route. */
+export const PRICE_MODES = ['trip', 'km']
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -100,9 +102,34 @@ export const workOrders = collection({
     organization: text(body.organization, 120),
     description: text(body.description, 500),
     schedule: cleanSchedule(body.schedule),
+    /* what one trip of this order is charged, in SAR */
+    price: Math.round((num(body.price, 0, 10_000_000) ?? 0) * 100) / 100,
     active: body.active !== false,
   }),
 })
+
+/* ── pricing ────────────────────────────────────────────────────────── */
+
+const PRICING = 'pricing'
+
+/** The price list: per work-order type, `{ mode: trip|km, amount }`. */
+export async function getPricing() {
+  const saved = (await get(PRICING)) ?? {}
+  return Object.fromEntries(WORK_ORDER_TYPES.map((t) => [t, saved[t] ?? { mode: 'trip', amount: 0 }]))
+}
+
+export async function setPricing(body = {}) {
+  const next = {}
+  for (const t of WORK_ORDER_TYPES) {
+    const p = body[t] ?? {}
+    next[t] = {
+      mode: PRICE_MODES.includes(p.mode) ? p.mode : 'trip',
+      amount: Math.round((num(p.amount, 0, 10_000_000) ?? 0) * 100) / 100,
+    }
+  }
+  await set(PRICING, next)
+  return next
+}
 
 /* ── trips ──────────────────────────────────────────────────────────── */
 
@@ -162,6 +189,7 @@ export async function tripsBetween(from, to, { driverId = null } = {}) {
         driverId: wo.driverId,
         routeId: wo.routeId,
         groupId: wo.groupId,
+        price: wo.price ?? 0,
         status: saved?.status ?? 'scheduled',
         startedAt: saved?.startedAt ?? null,
         completedAt: saved?.completedAt ?? null,

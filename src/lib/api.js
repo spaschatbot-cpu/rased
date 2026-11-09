@@ -152,6 +152,8 @@ export const api = {
   updateRoute: (id, body) => request(`/routes?id=${id}`, { method: 'PUT', body }),
   deleteRoute: (id) => request(`/routes?id=${id}`, { method: 'DELETE' }),
   getWorkOrders: () => request('/workorders'),
+  getPricing: () => request('/pricing'),
+  savePricing: (body) => request('/pricing', { method: 'PUT', body }),
   createWorkOrder: (body) => request('/workorders', { method: 'POST', body }),
   updateWorkOrder: (id, body) => request(`/workorders?id=${id}`, { method: 'PUT', body }),
   deleteWorkOrder: (id) => request(`/workorders?id=${id}`, { method: 'DELETE' }),

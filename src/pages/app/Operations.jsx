@@ -11,7 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Marker, Polyline, useMapEvents } from 'react-leaflet'
-import { Route as RouteIcon, ClipboardList, CalendarClock, Plus, Pencil, Trash2, Undo2, Ban, Check } from 'lucide-react'
+import { Route as RouteIcon, ClipboardList, CalendarClock, Plus, Pencil, Trash2, Undo2, Ban, Check, Tag } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
 import { Card, CardHeader, Table, Td, Badge, Button, Input, Modal, Field, Select, Segmented, cn } from '../../components/ui'
@@ -322,22 +322,103 @@ const blankOrder = (groups) => ({
   organization: '',
   description: '',
   routeId: '',
+  price: 0,
   active: true,
   schedule: { startDate: dayBack(0), endDate: '', startTime: '08:00', endTime: '17:00', weekdays: [], everyDays: 1 },
 })
 
-function WorkOrderEditor({ open, row, routes, onClose, onSaved }) {
+/** The price a work order gets from the price list, for its type and route. */
+function suggestedPrice(pricing, type, route) {
+  const p = pricing?.[type]
+  if (!p) return 0
+  if (p.mode === 'km') return route ? Math.round(p.amount * route.distanceKm * 100) / 100 : 0
+  return p.amount
+}
+
+const SAR = (lang) => (lang === 'ar' ? 'ريال' : 'SAR')
+
+function PricingEditor({ open, pricing, onClose, onSaved }) {
+  const { t, lang } = useLang()
+  const [d, setD] = useState({})
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!open) return
+    setD(Object.fromEntries(WO_TYPES.map((x) => [x, { ...(pricing?.[x] ?? { mode: 'trip', amount: 0 }) }])))
+    setError(null)
+  }, [open, pricing])
+
+  const save = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await api.savePricing(d)
+      onSaved(res.pricing)
+    } catch (err) {
+      setError(apiErrorText(err.message, t))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      error={error}
+      title={lang === 'ar' ? 'الأسعار' : 'Pricing'}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button onClick={save} disabled={busy}>{busy ? t('common.loading') : t('common.save')}</Button>
+        </>
+      }
+    >
+      <p className="mb-4 text-[12.5px] font-bold text-muted">
+        {lang === 'ar'
+          ? 'سعر كل نوع من أوامر العمل — يظهر تلقائيًا في أمر العمل الجديد ويمكن تغييره هناك.'
+          : 'A price for each work-order type — filled into a new work order, where it can still be changed.'}
+      </p>
+      <div className="space-y-3">
+        {WO_TYPES.map((x) => (
+          <div key={x} className="grid grid-cols-[1fr_6.5rem_8.5rem] items-center gap-2">
+            <span className="text-[13px] font-extrabold">{lbl('type', x, lang)}</span>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              dir="ltr"
+              value={d[x]?.amount ?? 0}
+              onChange={(e) => setD((all) => ({ ...all, [x]: { ...all[x], amount: e.target.value } }))}
+              className="h-10 text-[12.5px]"
+            />
+            <Select value={d[x]?.mode ?? 'trip'} onChange={(e) => setD((all) => ({ ...all, [x]: { ...all[x], mode: e.target.value } }))} className="h-10 text-[12.5px]">
+              <option value="trip">{lang === 'ar' ? 'ريال / رحلة' : 'SAR / trip'}</option>
+              <option value="km">{lang === 'ar' ? 'ريال / كم' : 'SAR / km'}</option>
+            </Select>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  )
+}
+
+function WorkOrderEditor({ open, row, routes, pricing, onClose, onSaved }) {
   const { t, lang, nf } = useLang()
   const { groups, vehicles, users } = useFleet()
   const [d, setD] = useState(blankOrder(groups))
   const [step, setStep] = useState('main')
+  /* once the price is typed by hand, the price list stops overwriting it */
+  const [priceTouched, setPriceTouched] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const drivers = users.filter((u) => u.role === 'driver' && u.active !== false)
 
   useEffect(() => {
     if (!open) return
-    setD(row ? { ...row, schedule: { ...row.schedule } } : blankOrder(groups))
+    setD(row ? { ...row, price: row.price ?? 0, schedule: { ...row.schedule } } : blankOrder(groups))
+    setPriceTouched(Boolean(row))
     setStep('main')
     setError(null)
   }, [open, row, groups])
@@ -351,11 +432,18 @@ function WorkOrderEditor({ open, row, routes, onClose, onSaved }) {
     set({ driverId: id, ...(u?.vehicleId && !d.vehicleId ? { vehicleId: u.vehicleId } : null) })
   }
 
+  /* a new order takes its price from the list, following its type and route */
+  useEffect(() => {
+    if (!open || priceTouched) return
+    const price = suggestedPrice(pricing, d.type, routes.find((r) => r.id === Number(d.routeId)))
+    setD((x) => (x.price === price ? x : { ...x, price }))
+  }, [open, priceTouched, pricing, routes, d.type, d.routeId])
+
   const save = async () => {
     setBusy(true)
     setError(null)
     try {
-      const body = { ...d, groupId: Number(d.groupId), vehicleId: Number(d.vehicleId), driverId: Number(d.driverId), routeId: Number(d.routeId) }
+      const body = { ...d, price: Number(d.price) || 0, groupId: Number(d.groupId), vehicleId: Number(d.vehicleId), driverId: Number(d.driverId), routeId: Number(d.routeId) }
       if (row) await api.updateWorkOrder(row.id, body)
       else await api.createWorkOrder(body)
       onSaved()
@@ -436,6 +524,19 @@ function WorkOrderEditor({ open, row, routes, onClose, onSaved }) {
               <option value="1">{t('common.active')}</option>
               <option value="0">{t('common.inactive')}</option>
             </Select>
+          </Field>
+          <Field label={`${lang === 'ar' ? 'سعر الرحلة' : 'Trip price'} (${SAR(lang)})`}>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              dir="ltr"
+              value={d.price}
+              onChange={(e) => {
+                setPriceTouched(true)
+                set({ price: e.target.value })
+              }}
+            />
           </Field>
           <Field label={lang === 'ar' ? 'الوصف' : 'Description'} className="sm:col-span-2">
             <Input value={d.description} onChange={(e) => set({ description: e.target.value })} />
@@ -529,6 +630,12 @@ export function WorkOrdersSection({ query, canWrite }) {
   const { rows, reload, error } = useList(loadOrders, 'workOrders')
   const { rows: routes } = useList(loadRoutes, 'routes')
   const [editing, setEditing] = useState(null)
+  const [pricing, setPricing] = useState(null)
+  const [pricingOpen, setPricingOpen] = useState(false)
+
+  useEffect(() => {
+    api.getPricing().then((r) => setPricing(r.pricing)).catch(() => {})
+  }, [])
 
   const name = (list, id, ar = 'nameAr', en = 'nameEn') => {
     const x = list.find((r) => r.id === id)
@@ -556,7 +663,14 @@ export function WorkOrdersSection({ query, canWrite }) {
           title={lang === 'ar' ? 'أوامر العمل' : 'Work orders'}
           subtitle={`${nf(rows.length)} ${lang === 'ar' ? 'أمر' : 'orders'}`}
           icon={ClipboardList}
-          action={canWrite && <Button size="sm" onClick={() => setEditing({ row: null })}><Plus size={15} />{lang === 'ar' ? 'أمر عمل جديد' : 'New work order'}</Button>}
+          action={
+            canWrite && (
+              <span className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setPricingOpen(true)}><Tag size={15} />{lang === 'ar' ? 'الأسعار' : 'Pricing'}</Button>
+                <Button size="sm" onClick={() => setEditing({ row: null })}><Plus size={15} />{lang === 'ar' ? 'أمر عمل جديد' : 'New work order'}</Button>
+              </span>
+            )
+          }
         />
         {error && <p className="mx-5 mb-3 text-[12.5px] font-bold text-[#e04b34]">{error}</p>}
         <Table
@@ -614,10 +728,20 @@ export function WorkOrdersSection({ query, canWrite }) {
         open={Boolean(editing)}
         row={editing?.row}
         routes={routes}
+        pricing={pricing}
         onClose={() => setEditing(null)}
         onSaved={() => {
           setEditing(null)
           reload()
+        }}
+      />
+      <PricingEditor
+        open={pricingOpen}
+        pricing={pricing}
+        onClose={() => setPricingOpen(false)}
+        onSaved={(p) => {
+          setPricing(p)
+          setPricingOpen(false)
         }}
       />
     </>
@@ -646,6 +770,9 @@ export function TripsSection({ query, canWrite }) {
       ),
     [rows, status, q, vehicles],
   )
+
+  /* what the completed trips in view earned */
+  const earned = shown.filter((r) => r.status === 'completed').reduce((sum, r) => sum + (r.price || 0), 0)
 
   const act = async (r, action) => {
     setBusy(r.id)
@@ -686,11 +813,12 @@ export function TripsSection({ query, canWrite }) {
         className={TABLE_SCROLL}
         columns={[
           { key: 'w', label: lang === 'ar' ? 'رقم أمر العمل' : 'Work order serial', width: '10%' },
-          { key: 'n', label: lang === 'ar' ? 'اسم أمر العمل' : 'Work order name', width: '18%' },
-          { key: 'x', label: lang === 'ar' ? 'رقم التنفيذ' : 'Execution number', width: '10%' },
-          { key: 'p', label: lang === 'ar' ? 'رقم اللوحة' : 'Plate', width: '11%' },
-          { key: 'd', label: t('common.driver'), width: '15%' },
-          { key: 's', label: lang === 'ar' ? 'وقت البداية المخطط' : 'Planned start time', width: '15%' },
+          { key: 'n', label: lang === 'ar' ? 'اسم أمر العمل' : 'Work order name', width: '16%' },
+          { key: 'x', label: lang === 'ar' ? 'رقم التنفيذ' : 'Execution number', width: '9%' },
+          { key: 'p', label: lang === 'ar' ? 'رقم اللوحة' : 'Plate', width: '10%' },
+          { key: 'd', label: t('common.driver'), width: '13%' },
+          { key: 's', label: lang === 'ar' ? 'وقت البداية المخطط' : 'Planned start time', width: '13%' },
+          { key: 'c', label: lang === 'ar' ? 'السعر' : 'Price', width: '8%' },
           { key: 't', label: t('common.status'), width: '11%' },
           { key: 'a', label: t('common.actions'), width: '10%', className: 'text-end' },
         ]}
@@ -706,6 +834,7 @@ export function TripsSection({ query, canWrite }) {
               <Td><Plate plate={vehicles.find((v) => v.id === r.vehicleId)?.plate} /></Td>
               <Td>{driver ? (lang === 'ar' ? driver.nameAr : driver.nameEn) : '—'}</Td>
               <Td className="tabular-nums text-[12px]" dir="ltr">{r.plannedStart.replace('T', ' ')}</Td>
+              <Td className="tabular-nums text-[12px] font-bold">{r.price ? `${nf(r.price)} ${SAR(lang)}` : '—'}</Td>
               <Td>
                 <Badge tone={TRIP_TONE[r.status]} dot>{lbl('trip', r.status, lang)}</Badge>
                 {r.completedAt && <span className="mt-1 block text-[11px] text-muted">{formatDateTime(r.completedAt)}</span>}
@@ -735,6 +864,10 @@ export function TripsSection({ query, canWrite }) {
           )
         }}
       />
+      <div className="flex items-center justify-end gap-2 border-t border-[var(--s-border)] px-5 py-3 text-[13px] font-extrabold">
+        <span className="text-muted">{lang === 'ar' ? 'إجمالي الرحلات المكتملة' : 'Completed trips total'}:</span>
+        <span className="tabular-nums">{nf(earned)} {SAR(lang)}</span>
+      </div>
     </Card>
   )
 }
