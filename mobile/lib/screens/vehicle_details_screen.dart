@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../i18n.dart';
+import '../sensors.dart';
 import '../services/api_client.dart';
 import '../theme.dart';
 import '../widgets/fleet_widgets.dart';
@@ -164,6 +165,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
 
     /* بلا خطّ إشعال من الجهاز يُستدلّ من الحركة، ويقال ذلك صراحة */
     final ignitionOn = ignition ?? (status == 'moving' || status == 'idle');
+    final sensors = reportedSensors(pos);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -284,6 +286,22 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               ),
             ],
           ),
+          /* كل حساس يرسله جهاز هذه المركبة فعلًا — وقود، حرارة، أبواب… — ولا
+             شيء حين لا يرسل الجهاز غير الموقع */
+          if (sensors.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _MetricGrid(
+              cells: [
+                for (final (spec, value) in sensors)
+                  _MetricCell(
+                    icon: spec.icon,
+                    label: spec.label,
+                    value: spec.format(value),
+                    tone: spec.isAlarm(value) ? Brand.danger : const Color(0xFF38BDF8),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -946,7 +964,8 @@ class _MetricGrid extends StatelessWidget {
             children: [
               Expanded(child: cell(cells[a])),
               VerticalDivider(width: 1, thickness: 1, color: Palette.border),
-              Expanded(child: cell(cells[b])),
+              /* an odd count leaves the last half-row empty rather than stretching */
+              Expanded(child: b < cells.length ? cell(cells[b]) : const SizedBox()),
             ],
           ),
         );
@@ -959,9 +978,10 @@ class _MetricGrid extends StatelessWidget {
       ),
       child: Column(
         children: [
-          row(0, 1),
-          Divider(height: 1, thickness: 1, color: Palette.border),
-          row(2, 3),
+          for (var i = 0; i < cells.length; i += 2) ...[
+            if (i > 0) Divider(height: 1, thickness: 1, color: Palette.border),
+            row(i, i + 1),
+          ],
         ],
       ),
     );

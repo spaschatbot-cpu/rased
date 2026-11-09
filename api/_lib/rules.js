@@ -23,7 +23,21 @@ export const RULE_TYPES = [
   'ignitionOn',
   'ignitionOff',
   'maintenance',  // a service record crossed its due mark
+  /* need a device with the matching sensor — see shared/sensors.js */
+  'tempHigh',     // threshold = °C; any probe above it
+  'tempLow',      // threshold = °C; any probe below it
+  'lowFuel',      // threshold = percent
+  'fuelDrop',     // threshold = percent lost between two reports
+  'door',         // a door opened
+  'tank',         // the fuel-tank lid opened
+  'towing',       // moved with the ignition off
+  'unplugged',    // tracker disconnected from the vehicle
+  'crash',        // impact detected by the tracker
+  'harsh',        // harsh acceleration, braking or cornering
 ]
+
+/* temperatures go below zero — a freezer truck alarms at -15 */
+const thresholdFloor = (type) => (type === 'tempHigh' || type === 'tempLow' ? -60 : 0)
 
 export const SEVERITIES = ['low', 'medium', 'high']
 export const CHANNELS = ['web', 'push', 'mail', 'sms']
@@ -50,8 +64,8 @@ function validate(body) {
 
   /* a speed or idle rule with no number to compare against would fire on
      everything or on nothing — neither is what the operator meant */
-  const needsThreshold = ['speed', 'idle', 'lowBattery', 'maintenance']
-  if (needsThreshold.includes(body.type) && num(body.threshold, 0, 1e6) == null) {
+  const needsThreshold = ['speed', 'idle', 'lowBattery', 'maintenance', 'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop']
+  if (needsThreshold.includes(body.type) && num(body.threshold, thresholdFloor(body.type), 1e6) == null) {
     return `a ${body.type} rule needs a threshold`
   }
   return null
@@ -60,7 +74,7 @@ function validate(body) {
 const shape = (body, existing) => ({
   ...existing,
   type: text(body.type, 30),
-  threshold: num(body.threshold, 0, 1e6),
+  threshold: num(body.threshold, thresholdFloor(text(body.type, 30)), 1e6),
   channels: (Array.isArray(body.channels) ? body.channels : []).filter((c) => CHANNELS.includes(c)),
   vehicles: body.vehicles === 'all' ? 'all' : body.vehicles.map(Number).filter(Number.isFinite),
   severity: SEVERITIES.includes(body.severity) ? body.severity : 'low',

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Bell, Gauge, PlugZap, Siren, LogIn, LogOut, KeyRound, Timer, BatteryLow,
   Wrench, Plus, Trash2, CheckCheck, Mail, AlertTriangle, Send, User,
+  Thermometer, Snowflake, Fuel, TrendingDown, DoorOpen, Droplets, Truck, Unplug, ShieldAlert, Activity,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
@@ -22,6 +23,16 @@ export const ALERT_ICON = {
   idle: Timer,
   lowBattery: BatteryLow,
   maintenance: Wrench,
+  tempHigh: Thermometer,
+  tempLow: Snowflake,
+  lowFuel: Fuel,
+  fuelDrop: TrendingDown,
+  door: DoorOpen,
+  tank: Droplets,
+  towing: Truck,
+  unplugged: Unplug,
+  crash: ShieldAlert,
+  harsh: Activity,
 }
 
 export const ALERT_TONE = {
@@ -35,7 +46,12 @@ const SEV_BADGE = { high: 'red', medium: 'amber', low: 'sky' }
 const ALERT_TYPES = [
   'speed', 'power', 'sos', 'geofenceIn', 'geofenceOut',
   'ignitionOn', 'ignitionOff', 'idle', 'lowBattery', 'maintenance',
+  /* these need a device with the matching sensor, and stay silent until one reports */
+  'tempHigh', 'tempLow', 'lowFuel', 'fuelDrop', 'door', 'tank', 'towing', 'unplugged', 'crash', 'harsh',
 ]
+
+/* a sensible starting threshold when the operator picks a type */
+const DEFAULT_THRESHOLD = { speed: '120', idle: '20', lowBattery: '20', maintenance: '10000', tempHigh: '8', tempLow: '2', lowFuel: '15', fuelDrop: '10' }
 
 const MINI_TONE = {
   brand: 'bg-brand-500/12 text-brand-600 dark:text-brand-400',
@@ -96,6 +112,8 @@ export default function Alerts() {
     if (type === 'speed') return t('common.kmh')
     if (type === 'idle') return lang === 'ar' ? 'دقيقة' : 'min'
     if (type === 'lowBattery') return 'V'
+    if (type === 'tempHigh' || type === 'tempLow') return '°C'
+    if (type === 'lowFuel' || type === 'fuelDrop') return '%'
     return ''
   }
 
@@ -516,7 +534,7 @@ export default function Alerts() {
             </p>
           )}
           <Field label={t('common.type')}>
-            <Select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })}>
+            <Select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value, threshold: DEFAULT_THRESHOLD[e.target.value] ?? '' })}>
               {ALERT_TYPES.map((ty) => (
                 <option key={ty} value={ty}>
                   {t(`alert.t.${ty}`)}
@@ -526,7 +544,7 @@ export default function Alerts() {
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('alert.threshold')} hint={draft.type === 'speed' ? t('common.kmh') : undefined}>
+            <Field label={t('alert.threshold')} hint={thresholdUnit(draft.type) || undefined}>
               <Input
                 type="number"
                 min="0"

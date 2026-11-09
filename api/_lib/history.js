@@ -17,6 +17,7 @@
  */
 import { del, get, mutate } from './store.js'
 import { MOVING_KMH, measureRun } from '../../shared/trail-math.js'
+import { sensorsOf } from '../../shared/sensors.js'
 import { dayOf } from '../../shared/clock.js'
 
 /** Days of trail kept before a day is dropped. */
@@ -91,8 +92,7 @@ export async function append(vehicleId, fix) {
     /* sensors a device may or may not carry. Stored only when one actually
        reported — the cold-chain report is built from these, and dropping them
        here left it permanently empty however good the hardware was. */
-    ...(fix.temperature == null ? {} : { temperature: fix.temperature }),
-    ...(fix.humidity == null ? {} : { humidity: fix.humidity }),
+    ...sensorsOf(fix),
     at,
   }
 

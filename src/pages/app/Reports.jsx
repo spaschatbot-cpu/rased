@@ -19,7 +19,7 @@ import { dayBack } from '../../../shared/clock'
 const todayISO = () => dayBack(0)
 const shiftISO = (days) => dayBack(days)
 
-const TYPES = ['general', 'driving', 'speed', 'sfda']
+const TYPES = ['general', 'driving', 'speed', 'sfda', 'fuel', 'sensors']
 
 /** قائمة منسدلة لاختيار عدة مركبات */
 function VehiclePicker({ vehicles, picked, setPicked }) {
@@ -208,6 +208,27 @@ export default function Reports() {
         { key: 'address', type: 'text', label: t('map.address') },
       ]
     }
+    if (rt === 'fuel') {
+      return [
+        vehicleCol,
+        { key: 'startFuel', type: 'int', label: `${t('rep.fuelStart')} (%)` },
+        { key: 'endFuel', type: 'int', label: `${t('rep.fuelEnd')} (%)` },
+        { key: 'minFuel', type: 'int', label: `${t('rep.fuelMin')} (%)` },
+        { key: 'refills', type: 'int', label: t('rep.refills') },
+        { key: 'refilled', type: 'int', label: `${t('rep.refilled')} (%)` },
+        { key: 'drops', type: 'int', label: t('rep.fuelDrops') },
+        { key: 'dropped', type: 'int', label: `${t('rep.fuelDropped')} (%)` },
+        { key: 'fuelUsed', type: 'num', label: `${t('rep.fuelUsed')} (L)` },
+      ]
+    }
+    if (rt === 'sensors') {
+      return [
+        vehicleCol,
+        { key: 'at', type: 'text', label: t('common.time') },
+        { key: 'sensorName', type: 'text', label: t('rep.sensor') },
+        { key: 'sensorValue', type: 'text', label: t('rep.reading') },
+      ]
+    }
     if (rt === 'sfda') {
       return [
         vehicleCol,
@@ -234,6 +255,8 @@ export default function Reports() {
       ...r,
       address: lang === 'ar' ? r.addressAr : r.addressEn,
       compliance: r.compliant === undefined ? '' : r.compliant ? t('rep.compliant') : t('rep.breach'),
+      sensorName: lang === 'ar' ? r.sensorAr : r.sensorEn,
+      sensorValue: lang === 'ar' ? r.valueAr : r.valueEn,
     }))
 
   const exportMeta = () => {
@@ -406,7 +429,11 @@ export default function Reports() {
             desc={
               result.unsupported
                 ? lang === 'ar'
-                  ? 'تقرير الهيئة يحتاج جهازًا يرسل درجة الحرارة — لا يوجد جهاز كهذا يبثّ حاليًا.'
+                  ? {
+                      sfda: 'تقرير الهيئة يحتاج جهازًا يرسل درجة الحرارة — لا يوجد جهاز كهذا يبثّ حاليًا.',
+                      fuel: 'تقرير الوقود يحتاج جهازًا بحساس وقود — لا يوجد جهاز كهذا يبثّ في هذه الفترة.',
+                      sensors: 'لا يوجد جهاز بحساسات (أبواب، تصادم، سلوك القيادة) بثّ في هذه الفترة.',
+                    }[result.type] ?? result.unsupported
                   : result.unsupported
                 : lang === 'ar'
                   ? 'التقارير تُبنى من المسارات المسجَّلة فعليًا. ابدأ وردية من تطبيق السائق ثم أعد التشغيل.'
@@ -559,6 +586,80 @@ function ReportTable({ type, rows }) {
             </Td>
             <Td className="max-w-56 truncate text-[12.5px] font-bold text-muted">
               {lang === 'ar' ? r.addressAr : r.addressEn}
+            </Td>
+          </>
+        )}
+      />
+    )
+  }
+
+  if (type === 'fuel') {
+    const pct = (v) => (v == null ? '—' : `${nf(v)}%`)
+    return (
+      <Table
+        columns={[
+          { key: 'p', label: t('common.vehicle') },
+          { key: 's', label: t('rep.fuelStart') },
+          { key: 'e', label: t('rep.fuelEnd') },
+          { key: 'm', label: t('rep.fuelMin') },
+          { key: 'r', label: t('rep.refills') },
+          { key: 'd', label: t('rep.fuelDrops') },
+          { key: 'u', label: t('rep.fuelUsed') },
+        ]}
+        rows={rows}
+        empty={t('common.noData')}
+        renderRow={(r) => (
+          <>
+            <Td>
+              <bdi
+                dir="ltr"
+                className="inline-flex rounded-md border border-[var(--s-border)] bg-[var(--s-panel-2)] px-2 py-0.5 text-[12px] font-extrabold tracking-wider tabular-nums"
+              >
+                {r.plate}
+              </bdi>
+            </Td>
+            <Td className="tabular-nums font-bold">{pct(r.startFuel)}</Td>
+            <Td className="tabular-nums font-black">{pct(r.endFuel)}</Td>
+            <Td className="tabular-nums font-bold text-muted">{pct(r.minFuel)}</Td>
+            <Td className="tabular-nums font-bold">
+              {nf(r.refills)}
+              {r.refills > 0 && <span className="ms-1 text-[11px] font-bold text-muted">(+{nf(r.refilled)}%)</span>}
+            </Td>
+            <Td>
+              {r.drops > 0 ? <Badge tone="red">{nf(r.drops)} (−{nf(r.dropped)}%)</Badge> : <span className="text-muted">—</span>}
+            </Td>
+            <Td className="tabular-nums font-bold text-muted">{r.fuelUsed == null ? '—' : `${nf(r.fuelUsed)} L`}</Td>
+          </>
+        )}
+      />
+    )
+  }
+
+  if (type === 'sensors') {
+    return (
+      <Table
+        columns={[
+          { key: 'p', label: t('common.vehicle') },
+          { key: 't', label: t('common.time') },
+          { key: 's', label: t('rep.sensor') },
+          { key: 'v', label: t('rep.reading') },
+        ]}
+        rows={rows}
+        empty={t('common.noData')}
+        renderRow={(r) => (
+          <>
+            <Td>
+              <bdi
+                dir="ltr"
+                className="inline-flex rounded-md border border-[var(--s-border)] bg-[var(--s-panel-2)] px-2 py-0.5 text-[12px] font-extrabold tracking-wider tabular-nums"
+              >
+                {r.plate}
+              </bdi>
+            </Td>
+            <Td className="tabular-nums font-bold text-muted">{r.at}</Td>
+            <Td className="font-bold">{lang === 'ar' ? r.sensorAr : r.sensorEn}</Td>
+            <Td>
+              <Badge tone={r.alarm || r.sensor === 'harsh' ? 'red' : 'sky'}>{lang === 'ar' ? r.valueAr : r.valueEn}</Badge>
             </Td>
           </>
         )}

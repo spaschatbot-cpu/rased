@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { buildVehicles, hydrateVehicle, groups as fallbackGroups } from '../data/fleet'
+import { sensorsOf } from '../../shared/sensors'
 import { api } from '../lib/api'
 
 const FleetContext = createContext(null)
@@ -315,6 +316,7 @@ export function FleetProvider({ children }) {
                 addressAr: null,
                 addressEn: null,
                 satellites: 0,
+                sensors: {},
               }
               telemetry.current.set(v.id, cleared)
               places.current.delete(v.id)
@@ -330,8 +332,12 @@ export function FleetProvider({ children }) {
               speed: fix.speed,
               heading: fix.heading,
               status: fix.status,
-              ignition: fix.status === 'moving' || fix.status === 'idle',
+              /* a tracker with an ignition line says so; a phone does not, and
+                 movement is the best stand-in */
+              ignition: typeof fix.ignition === 'boolean' ? fix.ignition : fix.status === 'moving' || fix.status === 'idle',
               battery: fix.battery ?? v.battery,
+              /* only what the device actually reported — see shared/sensors.js */
+              sensors: sensorsOf(fix),
               satellites: fix.accuracy ? Math.max(4, 14 - Math.round(fix.accuracy / 5)) : v.satellites,
               lastUpdate: fix.at,
               /* A vehicle reporting from a real device must never keep the

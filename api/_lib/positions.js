@@ -12,6 +12,22 @@
  */
 import { del, get, mget, set } from './store.js'
 import { vehicleIds } from './vehicles.js'
+import { SENSORS, cleanSensor, sensorsOf } from '../../shared/sensors.js'
+
+/** Bounded copy of a tracker's IO map: numeric ids, short scalar values. */
+function rawIo(io) {
+  if (!io || typeof io !== 'object' || Array.isArray(io)) return null
+  const out = {}
+  let n = 0
+  for (const [id, v] of Object.entries(io)) {
+    if (!/^\d{1,5}$/.test(id) || n >= 128) continue
+    if (typeof v === 'number' && Number.isFinite(v)) out[id] = v
+    else if (typeof v === 'string' && v.length <= 64) out[id] = v
+    else continue
+    n += 1
+  }
+  return n ? out : null
+}
 
 const keyFor = (vehicleId) => `pos:${vehicleId}`
 
@@ -66,15 +82,14 @@ export function validate(body) {
       heading: Math.round(num(body.heading, 0, 360)),
       accuracy: Math.round(num(body.accuracy, 0, 10000)),
       battery: body.battery == null ? null : Math.round(num(body.battery, 0, 100)),
-      /* optional sensors — only present when the device actually has one, and
-         carried through so the cold-chain report can be built from real data */
-      temperature: body.temperature == null ? null : num(body.temperature, -60, 100),
-      humidity: body.humidity == null ? null : Math.round(num(body.humidity, 0, 100)),
       sos: body.sos === true,
-      /* hardware trackers only — a phone has no ignition line or supply. `null`
-         means "not reported", which the vehicle page tells apart from "off" */
-      ignition: typeof body.ignition === 'boolean' ? body.ignition : null,
-      power: body.power == null ? null : Number(num(body.power, 0, 60).toFixed(1)),
+      /* optional sensors (shared/sensors.js) — present only when the device
+         actually has one. `null` means "not reported", which every screen tells
+         apart from "off" or zero, and hides. */
+      ...sensorsOf(Object.fromEntries(SENSORS.map((s) => [s.key, cleanSensor(s, body[s.key])]))),
+      /* the tracker's raw IO elements, so a sensor nobody has mapped yet is
+         still on record. Live position only — history keeps the named fields. */
+      io: rawIo(body.io),
       /* the device's own clock is not trusted for ordering, only recorded */
       deviceAt: typeof body.at === 'string' ? body.at.slice(0, 40) : null,
     },

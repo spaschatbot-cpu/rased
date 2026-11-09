@@ -18,6 +18,12 @@ import { Card, CardHeader, StatusPill, Segmented, Button, cn } from '../../compo
 import FleetMap from '../../components/map/FleetMap'
 import { exportToPdf } from '../../utils/exporters'
 import { ALERT_ICON, ALERT_TONE } from './Alerts'
+import { SENSORS, formatSensor } from '../../../shared/sensors'
+
+/* shown in their own fixed cells above, not in the list of extra sensors */
+const FIXED_SENSORS = new Set(['power', 'fuel', 'fuelLiters'])
+/* readings that mean something is wrong when they are on */
+const ALARM_SENSORS = new Set(['crash', 'towing', 'unplugged', 'door', 'tank'])
 
 const AXIS_TICK = { fill: 'var(--s-text-muted)', fontSize: 11 }
 
@@ -45,6 +51,7 @@ const CELL_TONE = {
   amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-500',
   violet: 'bg-violet-500/12 text-violet-600 dark:text-violet-400',
   slate: 'bg-[var(--s-panel-2)] text-[var(--s-text-muted)]',
+  rose: 'bg-rose-500/12 text-rose-600 dark:text-rose-400',
 }
 
 function DetailCell({ icon: Icon, label, value, ltr, tone = 'slate', progress }) {
@@ -194,6 +201,13 @@ export default function VehicleDashboard() {
   const located = Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng)
   const coords = located ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}` : t('dash.noPosition')
   const seenAt = vehicle.lastUpdate ? formatTime(vehicle.lastUpdate) : '—'
+  /* only what this vehicle's device actually reports — nothing for a phone */
+  const sensors = vehicle.sensors ?? {}
+  const sensorText = (key) => {
+    const spec = SENSORS.find((x) => x.key === key)
+    return sensors[key] == null ? '—' : formatSensor(spec, sensors[key], lang)
+  }
+  const extraSensors = SENSORS.filter((x) => sensors[x.key] != null && !FIXED_SENSORS.has(x.key))
   const seenOn = vehicle.lastUpdate ? formatDateTime(vehicle.lastUpdate) : t('dash.noPosition')
 
   const tabs = [
@@ -438,17 +452,23 @@ export default function VehicleDashboard() {
             <DetailCell icon={Gauge} tone="brand" label={lang === 'ar' ? 'السرعة' : 'Speed'} value={`${nf(vehicle.speed)} ${t('common.kmh')}`} />
             <DetailCell icon={MapPin} tone="sky" label={lang === 'ar' ? 'الموقع' : 'Location'} value={coords} ltr={located} />
             <DetailCell icon={BatteryMedium} tone="violet" label={lang === 'ar' ? 'البطارية' : 'Battery'} value={vehicle.battery == null ? '—' : `${vehicle.battery}%`} />
-            {/* لا جهاز في هذا الأسطول يقيس الوقود ولا فولت الطاقة. الخانتان
-                تبقيان لأن المكان محجوز لهما حين يُركَّب الجهاز، ويقولان «لا
-                قراءة» بدل رقم يبدو قراءةً */}
-            <DetailCell icon={Zap} tone="amber" label={lang === 'ar' ? 'الطاقة' : 'Power'} value="—" />
-            <DetailCell icon={Fuel} tone="amber" label={lang === 'ar' ? 'الوقود' : 'Fuel'} value="—" />
+            {/* الطاقة والوقود لهما خانة ثابتة: «—» حتى يُركَّب جهاز يقيسهما */}
+            <DetailCell icon={Zap} tone="amber" label={lang === 'ar' ? 'الطاقة' : 'Power'} value={sensorText('power')} />
+            <DetailCell icon={Fuel} tone="amber" label={lang === 'ar' ? 'الوقود' : 'Fuel'} value={sensors.fuel != null ? sensorText('fuel') : sensorText('fuelLiters')} progress={sensors.fuel} />
             <DetailCell icon={RouteIcon} tone="sky" label={lang === 'ar' ? 'إجمالى المسافة' : 'Total Travelled'} value={`${nf(Math.round(vehicle.odometer))} ${t('common.km')}`} />
             <DetailCell icon={Clock} tone="brand" label={lang === 'ar' ? 'إجمالى وقت التشغيل' : 'Total Engine Hours'} value={`${nf(Math.round(vehicle.engineHours))} ${t('common.hours')}`} />
           </div>
-          <p className="border-t border-[var(--s-border)] px-5 py-2.5 text-[11px] font-semibold text-muted">
-            {t('veh.noSensor')}
-          </p>
+          {extraSensors.length > 0 ? (
+            <div className="grid grid-cols-2 gap-px border-t border-[var(--s-border)] bg-[var(--s-border)]">
+              {extraSensors.map((sn) => (
+                <DetailCell key={sn.key} icon={Activity} tone={sn.kind === 'bool' && sensors[sn.key] && ALARM_SENSORS.has(sn.key) ? 'rose' : 'slate'} label={lang === 'ar' ? sn.ar : sn.en} value={formatSensor(sn, sensors[sn.key], lang)} ltr={sn.kind === 'text'} />
+              ))}
+            </div>
+          ) : (
+            <p className="border-t border-[var(--s-border)] px-5 py-2.5 text-[11px] font-semibold text-muted">
+              {t('veh.noSensor')}
+            </p>
+          )}
         </Card>
       </div>
       </>

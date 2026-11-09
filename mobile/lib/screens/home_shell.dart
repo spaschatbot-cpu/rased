@@ -457,6 +457,16 @@ class _AlertTile extends StatelessWidget {
         'power' => Icons.power_off_rounded,
         'sos' => Icons.sos_rounded,
         'maintenance' => Icons.build_outlined,
+        'tempHigh' => Icons.thermostat_rounded,
+        'tempLow' => Icons.ac_unit_rounded,
+        'lowFuel' => Icons.local_gas_station_rounded,
+        'fuelDrop' => Icons.trending_down_rounded,
+        'door' => Icons.door_front_door_outlined,
+        'tank' => Icons.local_gas_station_outlined,
+        'towing' => Icons.rv_hookup_rounded,
+        'unplugged' => Icons.power_off_rounded,
+        'crash' => Icons.car_crash_rounded,
+        'harsh' => Icons.warning_amber_rounded,
         _ => Icons.info_outline,
       };
 

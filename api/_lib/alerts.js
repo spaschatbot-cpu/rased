@@ -16,6 +16,11 @@ import { get, mutate } from './store.js'
 import { rulesFor } from './rules.js'
 import { contains } from './geofences.js'
 import { dayOf } from '../../shared/clock.js'
+import { SENSORS } from '../../shared/sensors.js'
+
+/* the alert detail is read on the phone and the inbox as written, in Arabic
+   like a zone name is */
+const HARSH_LABEL = SENSORS.find((s) => s.key === 'harsh').values
 
 const INBOX = 'alerts'
 const stateKey = (vehicleId) => `alert-state:${vehicleId}`
@@ -28,6 +33,10 @@ const COOLDOWN_MS = 2 * 60 * 1000
 
 /** Below this a vehicle counts as stationary for the idle rule. */
 const MOVING_KMH = 4
+
+/* things that happen rather than states that hold: each report is its own
+   event, so the latch that stops a held condition repeating does not apply */
+const ONE_SHOT = new Set(['sos', 'crash', 'harsh'])
 
 /* ── the conditions ──────────────────────────────────────────────── */
 
@@ -102,6 +111,32 @@ export function evaluate(fix, previous, { vehicle, zones = [], memory = {} }) {
 
   if (fix.sos) events.push({ type: 'sos', detail: null })
 
+  /* ── optional sensors (shared/sensors.js) — each is silent unless the
+     vehicle's device actually reports it ─────────────────────────────── */
+  const temps = ['temperature', 'temperature2', 'temperature3', 'temperature4']
+    .map((k) => fix[k])
+    .filter((v) => v != null)
+  if (temps.length) {
+    const hi = Math.max(...temps)
+    const lo = Math.min(...temps)
+    events.push({ type: 'tempHigh', value: hi, detail: `${hi} °C` })
+    events.push({ type: 'tempLow', value: lo, detail: `${lo} °C` })
+  }
+  if (fix.fuel != null) {
+    events.push({ type: 'lowFuel', value: fix.fuel, detail: `${fix.fuel}%` })
+    /* a level that falls faster than any engine burns is a siphoned tank */
+    if (previous?.fuel != null && previous.fuel > fix.fuel) {
+      const drop = previous.fuel - fix.fuel
+      events.push({ type: 'fuelDrop', value: drop, detail: `${previous.fuel}% → ${fix.fuel}%` })
+    }
+  }
+  if (fix.door) events.push({ type: 'door', detail: null })
+  if (fix.tank) events.push({ type: 'tank', detail: null })
+  if (fix.towing) events.push({ type: 'towing', detail: null })
+  if (fix.unplugged) events.push({ type: 'unplugged', detail: null })
+  if (fix.crash) events.push({ type: 'crash', detail: null })
+  if (fix.harsh) events.push({ type: 'harsh', detail: HARSH_LABEL[fix.harsh]?.[0] ?? fix.harsh })
+
   return { events, memory: { zones: insideNow, stoppedSince, at: fix.at } }
 }
 
@@ -116,6 +151,10 @@ function fires(rule, event, vehicle) {
   }
   if (event.type === 'idle') return event.value >= (rule.threshold ?? 20)
   if (event.type === 'lowBattery') return event.value <= (rule.threshold ?? 20)
+  if (event.type === 'tempHigh') return event.value > (rule.threshold ?? 8)
+  if (event.type === 'tempLow') return event.value < (rule.threshold ?? 2)
+  if (event.type === 'lowFuel') return event.value <= (rule.threshold ?? 15)
+  if (event.type === 'fuelDrop') return event.value >= (rule.threshold ?? 10)
   return true
 }
 
@@ -154,7 +193,7 @@ export async function process(fix, previous, { vehicle, zones, rules, driver }) 
 
       /* geofence crossings are already edges — they describe a change, not a
          state — so they are not held down by the latch */
-      const edgeTriggered = !event.type.startsWith('geofence') && event.type !== 'sos'
+      const edgeTriggered = !event.type.startsWith('geofence') && !ONE_SHOT.has(event.type)
 
       if (!hit) {
         if (edgeTriggered) delete active[seat]

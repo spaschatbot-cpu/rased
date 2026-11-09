@@ -13,6 +13,8 @@
  *   driving — one row per trip
  *   speed   — one row per speeding episode
  *   sfda    — cold-chain temperatures; only rows for fixes that carried one
+ *   fuel    — one row per vehicle with a fuel sensor: levels, refills, drops
+ *   sensors — one row per sensor event: a door opening, a crash, harsh braking
  */
 import { handler, ok } from '../_lib/http.js'
 import { requireUser } from '../_lib/auth.js'
@@ -23,8 +25,9 @@ import { MOVING_KMH } from '../../shared/trail-math.js'
 import { reverse } from '../_lib/geocode.js'
 import { vehicles as registry } from '../_lib/vehicles.js'
 import { rules, rulesFor } from '../_lib/rules.js'
+import { SENSORS, formatSensor } from '../../shared/sensors.js'
 
-export const TYPES = ['general', 'driving', 'speed', 'sfda']
+export const TYPES = ['general', 'driving', 'speed', 'sfda', 'fuel', 'sensors']
 
 /** Longest range one request may cover — a year of trails is not a web request. */
 const MAX_DAYS = 92
@@ -215,6 +218,88 @@ const sfdaRows = (vehicle, points) =>
       compliant: p.temperature >= 2 && p.temperature <= 8,
     }))
 
+/**
+ * Fuel, per vehicle, from a level sensor. A jump of REFILL_PCT or more between
+ * two readings is a refill; a fall that size while standing still is not
+ * driving — it is the tank being emptied, and is listed as suspect.
+ */
+const REFILL_PCT = 10
+
+function fuelRows(vehicle, points) {
+  const read = points.filter((p) => p.fuel != null)
+  if (!read.length) return []
+
+  let refills = 0
+  let refilled = 0
+  let drops = 0
+  let dropped = 0
+  for (let i = 1; i < read.length; i++) {
+    const delta = read[i].fuel - read[i - 1].fuel
+    if (delta >= REFILL_PCT) {
+      refills += 1
+      refilled += delta
+    } else if (-delta >= REFILL_PCT && read[i].speed < MOVING_KMH && read[i - 1].speed < MOVING_KMH) {
+      drops += 1
+      dropped += -delta
+    }
+  }
+  const used = points.filter((p) => p.fuelUsed != null)
+  return [{
+    id: `${vehicle.id}-fuel`,
+    vehicleId: vehicle.id,
+    plate: vehicle.plate,
+    startFuel: read[0].fuel,
+    endFuel: read.at(-1).fuel,
+    minFuel: Math.min(...read.map((p) => p.fuel)),
+    refills,
+    refilled,
+    drops,
+    dropped,
+    /* litres burned, when the engine computer reports a running total */
+    fuelUsed: used.length > 1 ? Number((used.at(-1).fuelUsed - used[0].fuelUsed).toFixed(1)) : null,
+  }]
+}
+
+/* on/off sensors whose change is an event worth a row */
+const EVENT_SENSORS = SENSORS.filter((s) => s.kind === 'bool' && s.key !== 'ignition')
+const HARSH = SENSORS.find((s) => s.key === 'harsh')
+
+/**
+ * Every change of an on/off sensor, and every harsh-driving report. A sensor
+ * holding the same state is one row when it changed, not one per fix.
+ */
+function sensorRows(vehicle, points) {
+  const rows = []
+  const last = {}
+  const push = (p, spec, value) =>
+    rows.push({
+      id: `${vehicle.id}-s${rows.length}`,
+      vehicleId: vehicle.id,
+      plate: vehicle.plate,
+      at: clock(p.at),
+      sensor: spec.key,
+      sensorAr: spec.ar,
+      sensorEn: spec.en,
+      valueAr: formatSensor(spec, value, 'ar'),
+      valueEn: formatSensor(spec, value, 'en'),
+      alarm: value === true,
+      lat: p.lat,
+      lng: p.lng,
+    })
+
+  for (const p of points) {
+    for (const spec of EVENT_SENSORS) {
+      const v = p[spec.key]
+      if (v == null) continue
+      /* the first reading only counts when it is already "on" */
+      if (last[spec.key] === undefined ? v === true : v !== last[spec.key]) push(p, spec, v)
+      last[spec.key] = v
+    }
+    if (p.harsh) push(p, HARSH, p.harsh)
+  }
+  return rows
+}
+
 /* ── the endpoint ────────────────────────────────────────────────── */
 
 export default handler({
@@ -248,7 +333,7 @@ export default handler({
     if (asked.length) fleet = fleet.filter((v) => asked.includes(v.id))
     /* every account sees every vehicle — the same rule as the live map */
 
-    const build = { general: generalRow, driving: drivingRows, speed: speedRows, sfda: sfdaRows }[type]
+    const build = { general: generalRow, driving: drivingRows, speed: speedRows, sfda: sfdaRows, fuel: fuelRows, sensors: sensorRows }[type]
     const ruleList = await rules.all()
 
     const rows = []
@@ -277,7 +362,13 @@ export default handler({
       /* the driver app reports no temperature probe, so this stays empty until
          a device that has one is fitted — say so instead of showing zero rows
          as though the fleet were compliant */
-      unsupported: type === 'sfda' && !rows.length ? 'no temperature-capable device reported in this range' : null,
+      unsupported: rows.length
+        ? null
+        : {
+            sfda: 'no temperature-capable device reported in this range',
+            fuel: 'no fuel-sensor device reported in this range',
+            sensors: 'no device with door, crash or driving-behaviour sensors reported in this range',
+          }[type] ?? null,
     })
   },
 })
