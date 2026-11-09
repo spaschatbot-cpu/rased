@@ -485,7 +485,7 @@ function WorkOrderEditor({ open, row, routes, pricing, onClose, onSaved }) {
       <Segmented options={steps} value={step} onChange={setStep} className="mb-5 w-full [&>button]:flex-1" size="sm" />
 
       {step === 'main' && (
-        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-x-3 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label={lang === 'ar' ? 'الاسم *' : 'Name *'}>
             <Input value={d.name} onChange={(e) => set({ name: e.target.value })} />
           </Field>

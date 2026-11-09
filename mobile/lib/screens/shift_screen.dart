@@ -94,7 +94,7 @@ class _ShiftScreenState extends State<ShiftScreen> with SingleTickerProviderStat
   }
 }
 
-/// زرّا السائق تحت الحالة: الطوارئ والإبلاغ عن عطل.
+/// زرّ السائق تحت الحالة: الإبلاغ عن عطل.
 class _DriverActions extends StatefulWidget {
   const _DriverActions({required this.tracker});
 
@@ -105,37 +105,6 @@ class _DriverActions extends StatefulWidget {
 }
 
 class _DriverActionsState extends State<_DriverActions> {
-  bool _sos = false;
-
-  Future<void> _confirmSos() async {
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Brand.panel,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(tr('sos.title'), style: const TextStyle(fontWeight: FontWeight.w900, color: Brand.danger)),
-        content: Text(tr('sos.confirm'), style: const TextStyle(fontSize: 13.5, color: Brand.muted)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('shift.cancel'))),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Brand.danger),
-            child: Text(tr('sos.send')),
-          ),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
-    setState(() => _sos = true);
-    final failure = await widget.tracker.sendSos();
-    if (!mounted) return;
-    setState(() => _sos = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: failure == null ? Brand.green : Brand.danger,
-      content: Text(failure ?? tr('sos.sent')),
-    ));
-  }
-
   @override
   Widget build(BuildContext context) {
     Widget button({required IconData icon, required String label, required Color tone, VoidCallback? onTap, bool busy = false}) =>
@@ -168,8 +137,6 @@ class _DriverActionsState extends State<_DriverActions> {
 
     return Row(
       children: [
-        button(icon: Icons.sos_rounded, label: tr('sos.button'), tone: Brand.danger, onTap: _confirmSos, busy: _sos),
-        const SizedBox(width: 12),
         button(
           icon: Icons.build_circle_outlined,
           label: tr('repair.button'),

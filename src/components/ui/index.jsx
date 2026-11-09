@@ -312,15 +312,16 @@ export function Modal({ open, onClose, title, children, footer, error, size = 'm
   if (!open) return null
   const width = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl' }[size]
 
+  /* the top padding keeps the dialog clear of the app's header bar */
   return (
-    <div className="fixed inset-0 z-[1200] grid place-items-center p-4">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 pt-20">
       <button
         aria-label={t('common.close')}
         onClick={onClose}
         className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-sm"
       />
       <div
-        className={cn('card relative w-full rounded-2xl shadow-[var(--s-e3)]', width)}
+        className={cn('card relative flex max-h-full w-full flex-col rounded-2xl shadow-[var(--s-e3)]', width)}
         style={offsetY ? { transform: `translateY(${offsetY}px)` } : undefined}
       >
         <div className="card-head flex items-center justify-between gap-3 border-b p-4 sm:p-5">
@@ -342,7 +343,7 @@ export function Modal({ open, onClose, title, children, footer, error, size = 'm
             {error}
           </p>
         )}
-        <div className="max-h-[65vh] overflow-y-auto p-4 sm:p-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">{children}</div>
         {footer && <div className="flex items-center justify-end gap-2 border-t p-4">{footer}</div>}
       </div>
     </div>
