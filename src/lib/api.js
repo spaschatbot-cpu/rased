@@ -146,6 +146,17 @@ export const api = {
 
   /* technical support — one thread per driver, written from the driver app */
   getSupportThreads: (signal) => request('/support', { signal }),
+  /* operations — saved routes, work orders and the trips they run as */
+  getRoutes: () => request('/routes'),
+  createRoute: (body) => request('/routes', { method: 'POST', body }),
+  updateRoute: (id, body) => request(`/routes?id=${id}`, { method: 'PUT', body }),
+  deleteRoute: (id) => request(`/routes?id=${id}`, { method: 'DELETE' }),
+  getWorkOrders: () => request('/workorders'),
+  createWorkOrder: (body) => request('/workorders', { method: 'POST', body }),
+  updateWorkOrder: (id, body) => request(`/workorders?id=${id}`, { method: 'PUT', body }),
+  deleteWorkOrder: (id) => request(`/workorders?id=${id}`, { method: 'DELETE' }),
+  getTrips: (from, to) => request(`/trips?from=${from}&to=${to}`),
+  setTrip: (id, action) => request(`/trips?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { action } }),
   /* repair requests filed from the driver app */
   getRepairs: (signal) => request('/repairs', { signal }),
   getRepairPhoto: (id) => request(`/repairs?photo=${encodeURIComponent(id)}`),

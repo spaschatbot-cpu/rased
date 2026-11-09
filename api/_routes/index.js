@@ -41,14 +41,17 @@ import maintenance from './maintenance.js'
 import messages from './messages.js'
 import positions from './positions.js'
 import repairs from './repairs.js'
+import routesSaved from './routes.js'
 import reports from './reports.js'
 import shifts from './shifts.js'
 import site from './site.js'
 import support from './support.js'
 import track from './track.js'
+import trips from './trips.js'
 import usage from './usage.js'
 import users from './users.js'
 import vehicles from './vehicles.js'
+import workorders from './workorders.js'
 import login from './auth/login.js'
 import logout from './auth/logout.js'
 import me from './auth/me.js'
@@ -69,14 +72,17 @@ export const ROUTES = {
   messages,
   positions,
   repairs,
+  routes: routesSaved,
   reports,
   shifts,
   site,
   support,
   track,
+  trips,
   usage,
   users,
   vehicles,
+  workorders,
   'auth/login': login,
   'auth/logout': logout,
   'auth/me': me,

@@ -90,6 +90,22 @@ class ApiClient {
     return _send('POST', '/track', body: body, token: token);
   }
 
+  /// رحلات هذا السائق: اليوم والأيام الستة التالية (السيرفر يرشّح بالحساب).
+  Future<List<Map<String, dynamic>>> trips(String token) async {
+    final data = await _send('GET', '/trips', token: token);
+    return ((data['trips'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  /// المسارات المحفوظة — لاسم مسار الرحلة ومسافته.
+  Future<List<Map<String, dynamic>>> routes(String token) async {
+    final data = await _send('GET', '/routes', token: token);
+    return ((data['routes'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  /// بدء رحلة أو إنهاؤها: `start` أو `complete`.
+  Future<void> tripAction(String token, String id, String action) =>
+      _send('PATCH', '/trips?id=${Uri.encodeComponent(id)}', token: token, body: {'action': action});
+
   /// طلبات الإصلاح التي رفعها هذا السائق — الأحدث أولًا.
   Future<List<Map<String, dynamic>>> repairs(String token) async {
     final data = await _send('GET', '/repairs', token: token);

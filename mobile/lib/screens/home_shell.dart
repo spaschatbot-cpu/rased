@@ -7,6 +7,7 @@ import '../services/support_store.dart';
 import '../services/tracker.dart';
 import '../theme.dart';
 import '../widgets/stage_background.dart';
+import 'orders_tab.dart';
 import 'profile_tab.dart';
 import 'shift_screen.dart';
 import 'shifts_tab.dart';
@@ -36,6 +37,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _tab = 0;
+  final _orders = GlobalKey<OrdersTabState>();
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +67,7 @@ class _HomeShellState extends State<HomeShell> {
                     index: _tab,
                     children: [
                       ShiftScreen(tracker: widget.tracker),
+                      OrdersTab(key: _orders, tracker: widget.tracker),
                       ShiftsTab(store: widget.shifts),
                       ProfileTab(
                         session: session,
@@ -85,7 +88,8 @@ class _HomeShellState extends State<HomeShell> {
           setState(() => _tab = i);
           /* الورديات تُحدَّث عند دخول تبويبها لا دوريًّا: الوردية الجارية
              عدّادها يتقدّم، والسائق يفتح التبويب ليرى رقمًا الآن */
-          if (i == 1) widget.shifts.refresh();
+          if (i == 1) _orders.currentState?.refresh();
+          if (i == 2) widget.shifts.refresh();
         },
       ),
     );
@@ -125,6 +129,7 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     const items = [
       (Icons.home_outlined, Icons.home_rounded, 'tab.home'),
+      (Icons.assignment_outlined, Icons.assignment_rounded, 'tab.orders'),
       (Icons.event_note_outlined, Icons.event_note_rounded, 'tab.shifts'),
       (Icons.person_outline, Icons.person_rounded, 'tab.profile'),
     ];

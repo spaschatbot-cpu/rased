@@ -5,8 +5,9 @@ import {
   Wrench, Droplets, CircleDot, Disc3, ClipboardCheck, BatteryCharging, Filter, AlertTriangle, Check, Info,
   KeyRound, Gauge, Map as MapIcon, History, FileBarChart, Bell, RotateCcw, X,
   UserRound, Mail, Phone, Lock, Languages, Sun, Moon, CalendarDays,
-  Headset, MessageSquare, MessagesSquare, Send, IdCard,
+  Headset, MessageSquare, MessagesSquare, Send, IdCard, ClipboardList, Route as RouteIcon,
 } from 'lucide-react'
+import { RoutesSection, TripsSection, WorkOrdersSection } from './Operations'
 import { useLang } from '../../context/LanguageContext'
 import { useFleet } from '../../context/FleetContext'
 import { useTheme } from '../../context/ThemeContext'
@@ -27,6 +28,9 @@ const TABS = [
   { key: 'groups', icon: FolderTree, label: 'mng.groups', descAr: 'الفروع والمجموعات', descEn: 'Branches & groups' },
   { key: 'maint', icon: Wrench, label: 'mng.maint', descAr: 'جدولة وصيانة الأسطول', descEn: 'Fleet service schedule' },
   { key: 'repairs', icon: ClipboardCheck, label: 'mng.repairs', descAr: 'أعطال يبلّغ عنها السائقون', descEn: 'Faults drivers report' },
+  { key: 'workorders', icon: ClipboardList, label: 'mng.workorders', descAr: 'مهام السائقين ومواعيدها', descEn: 'Driver jobs and their schedule' },
+  { key: 'trips', icon: CalendarClock, label: 'mng.trips', descAr: 'تنفيذ أوامر العمل', descEn: 'Work order runs' },
+  { key: 'routes', icon: RouteIcon, label: 'mng.routes', descAr: 'مسارات مرسومة على الخريطة', descEn: 'Paths drawn on the map' },
   { key: 'perms', icon: KeyRound, label: 'mng.perms', descAr: 'صفحات كل موظف', descEn: 'Per-employee page access' },
   { key: 'support', icon: Headset, label: 'mng.support', descAr: 'رسائل السائقين', descEn: 'Messages from drivers' },
   { key: 'profile', icon: UserRound, label: 'mng.profile', descAr: 'بيانات حسابك', descEn: 'Your account details' },
@@ -58,7 +62,7 @@ const APP_PAGES = PAGE_KEYS.map((key) => ({ key, ...PAGE_META[key] }))
  * على الشاشات الضيّقة تُترك الصفحة تتمرّر كما هي: تقييد الارتفاع هناك يترك
  * للصفوف نافذة أضيق من أن تُقرأ.
  */
-const FULL_HEIGHT_TABS = new Set(['users', 'drivers', 'devices', 'groups', 'maint', 'repairs', 'perms'])
+const FULL_HEIGHT_TABS = new Set(['users', 'drivers', 'devices', 'groups', 'maint', 'repairs', 'workorders', 'trips', 'routes', 'perms'])
 /** بطاقة الجدول: تبتلع ما تبقّى من عمود المحتوى */
 const TABLE_CARD = 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col'
 /** الجدول نفسه: يتمرّر داخل بطاقته */
@@ -1257,6 +1261,10 @@ export default function Management() {
         {tab === 'support' && <SupportSection inbox={support} query={query} />}
 
         {tab === 'repairs' && <RepairsSection store={repairs} query={query} canWrite={canWrite} />}
+
+        {tab === 'workorders' && <WorkOrdersSection query={query} canWrite={canWrite} />}
+        {tab === 'trips' && <TripsSection query={query} canWrite={canWrite} />}
+        {tab === 'routes' && <RoutesSection query={query} canWrite={canWrite} />}
 
         {tab === 'profile' && <ProfileSection groups={groups} />}
           </div>
