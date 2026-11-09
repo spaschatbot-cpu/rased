@@ -207,7 +207,10 @@ export default function VehicleDashboard() {
     const spec = SENSORS.find((x) => x.key === key)
     return sensors[key] == null ? '—' : formatSensor(spec, sensors[key], lang)
   }
-  const extraSensors = SENSORS.filter((x) => sensors[x.key] != null && !FIXED_SENSORS.has(x.key))
+  /* every sensor is listed, reported or not — one the device does not send
+     reads «—», so the page shows what a fitted device would add */
+  const extraSensors = SENSORS.filter((x) => !FIXED_SENSORS.has(x.key))
+  const anyReported = SENSORS.some((x) => sensors[x.key] != null)
   const seenOn = vehicle.lastUpdate ? formatDateTime(vehicle.lastUpdate) : t('dash.noPosition')
 
   const tabs = [
@@ -458,13 +461,12 @@ export default function VehicleDashboard() {
             <DetailCell icon={RouteIcon} tone="sky" label={lang === 'ar' ? 'إجمالى المسافة' : 'Total Travelled'} value={`${nf(Math.round(vehicle.odometer))} ${t('common.km')}`} />
             <DetailCell icon={Clock} tone="brand" label={lang === 'ar' ? 'إجمالى وقت التشغيل' : 'Total Engine Hours'} value={`${nf(Math.round(vehicle.engineHours))} ${t('common.hours')}`} />
           </div>
-          {extraSensors.length > 0 ? (
-            <div className="grid grid-cols-2 gap-px border-t border-[var(--s-border)] bg-[var(--s-border)]">
-              {extraSensors.map((sn) => (
-                <DetailCell key={sn.key} icon={Activity} tone={sn.kind === 'bool' && sensors[sn.key] && ALARM_SENSORS.has(sn.key) ? 'rose' : 'slate'} label={lang === 'ar' ? sn.ar : sn.en} value={formatSensor(sn, sensors[sn.key], lang)} ltr={sn.kind === 'text'} />
-              ))}
-            </div>
-          ) : (
+          <div className="grid grid-cols-2 gap-px border-t border-[var(--s-border)] bg-[var(--s-border)]">
+            {extraSensors.map((sn) => (
+              <DetailCell key={sn.key} icon={Activity} tone={sn.kind === 'bool' && sensors[sn.key] && ALARM_SENSORS.has(sn.key) ? 'rose' : 'slate'} label={lang === 'ar' ? sn.ar : sn.en} value={sensorText(sn.key)} ltr={sn.kind === 'text'} />
+            ))}
+          </div>
+          {!anyReported && (
             <p className="border-t border-[var(--s-border)] px-5 py-2.5 text-[11px] font-semibold text-muted">
               {t('veh.noSensor')}
             </p>

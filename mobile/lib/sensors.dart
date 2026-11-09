@@ -30,7 +30,9 @@ class SensorSpec {
 
   String get label => AppLocale.isArabic ? ar : en;
 
-  String format(Object value) {
+  /// «—» when the device does not report this sensor.
+  String format(Object? value) {
+    if (value == null) return '—';
     String pick((String, String) p) => AppLocale.isArabic ? p.$1 : p.$2;
     switch (kind) {
       case SensorKind.flag:
@@ -46,7 +48,7 @@ class SensorSpec {
     }
   }
 
-  bool isAlarm(Object value) => alarm && value == true;
+  bool isAlarm(Object? value) => alarm && value == true;
 }
 
 /// Shown in the fixed tiles above the sensor list, not repeated in it.
@@ -103,9 +105,10 @@ const sensorSpecs = <SensorSpec>[
   SensorSpec('driverKey', SensorKind.text, 'بطاقة السائق', 'Driver ID card', Icons.badge_outlined),
 ];
 
-/// The sensors this fix actually carries, in display order.
-List<(SensorSpec, Object)> reportedSensors(Map<String, dynamic>? fix) => [
-      if (fix != null)
-        for (final s in sensorSpecs)
-          if (fix[s.key] != null && !fixedSensors.contains(s.key)) (s, fix[s.key] as Object),
+/// Every sensor, in display order, with this fix's reading — `null` (shown
+/// as «—») for one the device does not send, so the screen shows what a
+/// fitted device would add.
+List<(SensorSpec, Object?)> allSensors(Map<String, dynamic>? fix) => [
+      for (final s in sensorSpecs)
+        if (!fixedSensors.contains(s.key)) (s, fix?[s.key] as Object?),
     ];

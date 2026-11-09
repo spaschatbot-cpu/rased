@@ -165,7 +165,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
 
     /* بلا خطّ إشعال من الجهاز يُستدلّ من الحركة، ويقال ذلك صراحة */
     final ignitionOn = ignition ?? (status == 'moving' || status == 'idle');
-    final sensors = reportedSensors(pos);
+    final sensors = allSensors(pos);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -286,9 +286,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               ),
             ],
           ),
-          /* كل حساس يرسله جهاز هذه المركبة فعلًا — وقود، حرارة، أبواب… — ولا
-             شيء حين لا يرسل الجهاز غير الموقع */
-          if (sensors.isNotEmpty) ...[
+          /* كل الحساسات ظاهرة دائمًا — «—» لما لا يرسله جهاز هذه المركبة */
+          ...[
             const SizedBox(height: 12),
             _MetricGrid(
               cells: [
