@@ -36,7 +36,7 @@ const log = (...a) => console.log(new Date().toISOString(), ...a)
 
 /* What each digital input is wired to differs per installation, so it is set
    per deployment rather than guessed: DIN_ROLES="1=door,2=panic,3=tank".
-   Roles: door, panic, tank, mixer, seatbelt. */
+   Roles: door, panic, tank, mixer. */
 const DIN_ROLES = Object.fromEntries(
   String(process.env.DIN_ROLES || '')
     .split(',')
@@ -64,13 +64,10 @@ function ioFields(el) {
 
   if (has(239)) out.ignition = num(239) === 1
   if (has(66)) out.power = num(66) / 1000
-  if (has(67)) out.batteryVoltage = num(67) / 1000
   /* IO 113 is the backup battery level in percent; IO 236 is the alarm
      event, raised by the panic button wired to the unit */
   if (has(113)) out.battery = num(113)
   if (has(236) && num(236) === 1) out.sos = true
-  if (has(21)) out.gsm = num(21)
-  if (has(16)) out.deviceOdometer = num(16) / 1000
 
   /* fuel: CAN level %, then OBD level %, then a fuel-level sensor in litres */
   if (has(89)) out.fuel = num(89)
@@ -78,9 +75,6 @@ function ioFields(el) {
   if (has(84)) out.fuelLiters = num(84) / 10
   else if (has(201)) out.fuelLiters = num(201) / 10
   if (has(83)) out.fuelUsed = num(83) / 10
-  if (has(85)) out.rpm = num(85)
-  else if (has(36)) out.rpm = num(36)
-  if (has(32)) out.coolant = signed(el[32], 1)
 
   /* temperature: wired Dallas probes (0.1 °C, 4 bytes) first, then Bluetooth
      probes (0.01 °C, 2 bytes). Out-of-range codes mean "probe not connected"

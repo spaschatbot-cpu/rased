@@ -7,7 +7,7 @@ import {
 import {
   Truck, AlertTriangle, Clock, Zap, Fuel,
   Route as RouteIcon, Gauge, ArrowLeft, ArrowRight, Activity, MapPin, KeyRound, BatteryMedium, User,
-  FileText, Droplet, Droplets, Thermometer, Weight, Signal, DoorOpen, RefreshCw, ShieldCheck, ShieldAlert,
+  FileText, Droplet, Droplets, Thermometer, Weight, DoorOpen, RefreshCw, ShieldAlert,
   Unplug, CreditCard,
 } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
@@ -57,22 +57,16 @@ const CELL_TONE = {
 
 const SENSOR_ICON = {
   ignition: KeyRound,
-  batteryVoltage: BatteryMedium,
   fuelUsed: Droplet,
-  rpm: Gauge,
-  coolant: Thermometer,
   temperature: Thermometer,
   temperature2: Thermometer,
   temperature3: Thermometer,
   temperature4: Thermometer,
   humidity: Droplets,
   weight: Weight,
-  gsm: Signal,
-  deviceOdometer: RouteIcon,
   door: DoorOpen,
   tank: Fuel,
   mixer: RefreshCw,
-  seatbelt: ShieldCheck,
   crash: ShieldAlert,
   towing: Truck,
   unplugged: Unplug,
