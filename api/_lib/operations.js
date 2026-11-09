@@ -77,7 +77,8 @@ export const workOrders = collection({
   key: 'workOrders',
   validate(body) {
     if (!text(body.name, 120)) return 'a work order name is required'
-    if (!WORK_ORDER_TYPES.includes(body.type)) return `type must be one of ${WORK_ORDER_TYPES.join(', ')}`
+    /* one of the listed types, or one the office typed in itself */
+    if (!text(body.type, 60)) return 'a work order type is required'
     if (!RECURSIONS.includes(body.recursion)) return `recursion must be one of ${RECURSIONS.join(', ')}`
     if (!Number(body.groupId)) return 'a branch is required'
     if (!Number(body.vehicleId)) return 'a vehicle is required'
@@ -93,7 +94,7 @@ export const workOrders = collection({
   shape: (body, existing) => ({
     ...existing,
     name: text(body.name, 120),
-    type: body.type,
+    type: text(body.type, 60),
     recursion: body.recursion,
     groupId: Number(body.groupId),
     vehicleId: Number(body.vehicleId),

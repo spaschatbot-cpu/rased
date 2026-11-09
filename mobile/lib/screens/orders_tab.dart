@@ -137,6 +137,9 @@ class _TripCard extends StatelessWidget {
     final tone = _tone[status] ?? Brand.muted;
     final start = '${trip['plannedStart']}'.split('T').last;
     final end = '${trip['plannedEnd']}'.split('T').last;
+    /* a type the office typed in itself has no translation: show it as written */
+    final typeKey = 'orders.type.${trip['type']}';
+    final typeText = tr(typeKey) == typeKey ? '${trip['type']}' : tr(typeKey);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -164,7 +167,7 @@ class _TripCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text('${tr('orders.type.${trip['type']}')} · ${tr1('orders.execution', trip['execution'])}',
+          Text('$typeText · ${tr1('orders.execution', trip['execution'])}',
               style: const TextStyle(fontSize: 12, color: Brand.muted)),
           const SizedBox(height: 10),
           _Line(icon: Icons.event_outlined, text: isToday ? tr('orders.today') : '${trip['date']}'),

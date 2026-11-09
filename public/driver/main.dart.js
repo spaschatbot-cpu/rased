@@ -60403,38 +60403,39 @@ A.aBR.prototype={
 $1(a){return this.a.ws(this.b,a)},
 $S:36}
 A.ajf.prototype={
-F(a){var s,r,q,p,o,n,m,l,k,j=this,i=null,h="{}",g=j.c,f=J.ak(g),e=A.i(f.h(g,"status")),d=B.b5y.h(0,e)
-if(d==null)d=B.Q
-s=B.n.gaB(A.i(f.h(g,"plannedStart")).split("T"))
-r=B.n.gaB(A.i(f.h(g,"plannedEnd")).split("T"))
-q=A.av(18)
-p=j.e
-o=A.cu(p&&e!=="completed"?d.aj(0.5):B.b0,1)
-n=A.bw(A.M(A.i(f.h(g,"workOrderName")),i,i,i,B.hM,i,i,i),1)
-m=d.aj(0.15)
-l=A.av(20)
-k=t.p
-l=A.aI(A.b([n,A.ay(i,A.M(A.r("orders.status."+e),i,i,i,A.b6(i,i,d,i,i,i,i,i,i,i,i,11.5,i,i,B.am,i,i,!0,i,i,i,i,i,i,i,i),i,i,i),B.G,i,i,new A.aK(m,i,i,l,i,i,B.X),i,i,i,B.zO,i,i,i)],k),B.L,B.A,B.D,0,i)
-m=A.r("orders.type."+A.i(f.h(g,"type")))
-n=f.h(g,"execution")
-n=A.M(m+" \xb7 "+B.p.eG(A.r("orders.execution"),h,A.i(n)),i,i,i,B.xm,i,i,i)
-g=p?A.r("orders.today"):A.i(f.h(g,"date"))
-g=A.b([l,B.fH,n,B.dm,new A.Du(B.AG,g,i),new A.Du(B.AX,B.p.eG(B.p.eG(A.r("orders.window"),h,s),h,r),i)],k)
-f=j.d
-if(f!=null){n=J.ak(f)
-m=A.i(n.h(f,"name"))
-l=n.h(f,"distanceKm")
-l=B.p.eG(A.r("orders.km"),h,A.i(l))
-f=n.h(f,"durationMin")
-g.push(new A.Du(B.hh,m+" \xb7 "+l+" \xb7 "+B.p.eG(A.r("orders.minutes"),h,A.i(f)),i))}if(p)f=e==="scheduled"||e==="started"
-else f=!1
-if(f){f=j.f
-p=f?i:new A.b1e(j,e)
-if(f)f=B.XF
-else f=A.bH(e==="scheduled"?B.un:B.nf,i,i,i)
-n=e==="scheduled"
-m=A.M(n?A.r("orders.start"):A.r("orders.complete"),i,i,i,i,i,i,i)
-B.n.T(g,A.b([B.dn,A.c4(A.b62(f,m,p,A.Hn(n?B.P:B.bk,B.cu,B.bfj,i,i,i,B.lK)),i,1/0)],k))}return A.ay(i,A.b0(g,B.av,B.A,B.D),B.G,i,i,new A.aK(B.b9,i,o,q,i,i,B.X),i,i,B.zL,B.h9,i,i,i)}}
+F(a){var s,r,q,p,o,n,m,l,k,j,i,h=this,g=null,f="{}",e=h.c,d=J.ak(e),c=A.i(d.h(e,"status")),b=B.b5y.h(0,c)
+if(b==null)b=B.Q
+s=B.n.gaB(A.i(d.h(e,"plannedStart")).split("T"))
+r=B.n.gaB(A.i(d.h(e,"plannedEnd")).split("T"))
+q="orders.type."+A.i(d.h(e,"type"))
+p=A.r(q)===q?A.i(d.h(e,"type")):A.r(q)
+o=A.av(18)
+n=h.e
+m=A.cu(n&&c!=="completed"?b.aj(0.5):B.b0,1)
+l=A.bw(A.M(A.i(d.h(e,"workOrderName")),g,g,g,B.hM,g,g,g),1)
+k=b.aj(0.15)
+j=A.av(20)
+i=t.p
+j=A.aI(A.b([l,A.ay(g,A.M(A.r("orders.status."+c),g,g,g,A.b6(g,g,b,g,g,g,g,g,g,g,g,11.5,g,g,B.am,g,g,!0,g,g,g,g,g,g,g,g),g,g,g),B.G,g,g,new A.aK(k,g,g,j,g,g,B.X),g,g,g,B.zO,g,g,g)],i),B.L,B.A,B.D,0,g)
+k=d.h(e,"execution")
+k=A.M(p+" \xb7 "+B.p.eG(A.r("orders.execution"),f,A.i(k)),g,g,g,B.xm,g,g,g)
+e=n?A.r("orders.today"):A.i(d.h(e,"date"))
+e=A.b([j,B.fH,k,B.dm,new A.Du(B.AG,e,g),new A.Du(B.AX,B.p.eG(B.p.eG(A.r("orders.window"),f,s),f,r),g)],i)
+d=h.d
+if(d!=null){l=J.ak(d)
+k=A.i(l.h(d,"name"))
+j=l.h(d,"distanceKm")
+j=B.p.eG(A.r("orders.km"),f,A.i(j))
+d=l.h(d,"durationMin")
+e.push(new A.Du(B.hh,k+" \xb7 "+j+" \xb7 "+B.p.eG(A.r("orders.minutes"),f,A.i(d)),g))}if(n)d=c==="scheduled"||c==="started"
+else d=!1
+if(d){d=h.f
+n=d?g:new A.b1e(h,c)
+if(d)d=B.XF
+else d=A.bH(c==="scheduled"?B.un:B.nf,g,g,g)
+l=c==="scheduled"
+k=A.M(l?A.r("orders.start"):A.r("orders.complete"),g,g,g,g,g,g,g)
+B.n.T(e,A.b([B.dn,A.c4(A.b62(d,k,n,A.Hn(l?B.P:B.bk,B.cu,B.bfj,g,g,g,B.lK)),g,1/0)],i))}return A.ay(g,A.b0(e,B.av,B.A,B.D),B.G,g,g,new A.aK(B.b9,g,m,o,g,g,B.X),g,g,B.zL,B.h9,g,g,g)}}
 A.b1e.prototype={
 $0(){var s=this.b==="scheduled"?"start":"complete"
 return this.a.r.$1(s)},

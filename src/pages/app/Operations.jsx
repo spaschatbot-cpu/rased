@@ -314,7 +314,7 @@ export function RoutesSection({ query, canWrite }) {
 
 const blankOrder = (groups) => ({
   name: '',
-  type: WO_TYPES[0],
+  type: '',
   recursion: 'once',
   groupId: groups[0]?.id ?? '',
   vehicleId: '',
@@ -485,14 +485,24 @@ function WorkOrderEditor({ open, row, routes, pricing, onClose, onSaved }) {
       <Segmented options={steps} value={step} onChange={setStep} className="mb-5 w-full [&>button]:flex-1" size="sm" />
 
       {step === 'main' && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           <Field label={lang === 'ar' ? 'الاسم *' : 'Name *'}>
             <Input value={d.name} onChange={(e) => set({ name: e.target.value })} />
           </Field>
           <Field label={lang === 'ar' ? 'النوع *' : 'Type *'}>
-            <Select value={d.type} onChange={(e) => set({ type: e.target.value })}>
-              {WO_TYPES.map((x) => <option key={x} value={x}>{lbl('type', x, lang)}</option>)}
-            </Select>
+            {/* pick a listed type or type a new one */}
+            <Input
+              list="wo-types"
+              value={lbl('type', d.type, lang)}
+              placeholder={lang === 'ar' ? 'اختر أو اكتب' : 'Pick or type'}
+              onChange={(e) => {
+                const v = e.target.value
+                set({ type: WO_TYPES.find((k) => L.type[k].includes(v)) ?? v })
+              }}
+            />
+            <datalist id="wo-types">
+              {WO_TYPES.map((x) => <option key={x} value={lbl('type', x, lang)} />)}
+            </datalist>
           </Field>
           <Field label={lang === 'ar' ? 'نوع التكرار *' : 'Recursion type *'}>
             <Select value={d.recursion} onChange={(e) => set({ recursion: e.target.value })}>
@@ -538,7 +548,7 @@ function WorkOrderEditor({ open, row, routes, pricing, onClose, onSaved }) {
               }}
             />
           </Field>
-          <Field label={lang === 'ar' ? 'الوصف' : 'Description'} className="sm:col-span-2">
+          <Field label={lang === 'ar' ? 'الوصف' : 'Description'} className="sm:col-span-2 lg:col-span-3">
             <Input value={d.description} onChange={(e) => set({ description: e.target.value })} />
           </Field>
         </div>
