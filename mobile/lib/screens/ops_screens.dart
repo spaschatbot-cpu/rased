@@ -129,7 +129,7 @@ class OpsCardsState extends State<OpsCards> {
             icon: Icons.build_circle_rounded,
             tone: Brand.warn,
             value: open == null ? '—' : '$open',
-            label: tr('ops.repairs'),
+            label: tr('ops.repairsShort'),
             sub: tr('ops.repairsSub'),
             onTap: () => _open(RepairsScreen(api: widget.api, token: widget.token, role: widget.role)),
           ),
@@ -152,7 +152,7 @@ class OpsCardsState extends State<OpsCards> {
 }
 
 /// مربّع رقم واحد — نفس الشكل والطول للمؤشرات الثلاثة ولبطاقات التشغيل،
-/// فيصطفّ الصفّان. أيقونة في الأعلى، ثم الرقم، ثم العنوان وسطر صغير تحته.
+/// فيصطفّ الصفّان. أيقونة صغيرة والعنوان بجانبها، ثم الرقم، ثم سطر صغير تحته.
 class StatTile extends StatelessWidget {
   const StatTile({
     super.key,
@@ -165,7 +165,7 @@ class StatTile extends StatelessWidget {
     this.alert = false,
   });
 
-  static const height = 122.0;
+  static const height = 98.0;
 
   final IconData icon;
   final Color tone;
@@ -185,7 +185,7 @@ class StatTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Ink(
           height: height,
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+          padding: const EdgeInsets.fromLTRB(10, 11, 10, 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: edge),
@@ -199,21 +199,25 @@ class StatTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              /* الأيقونة صغيرة والعنوان بجانبها */
               Row(
                 children: [
                   Container(
-                    width: 30,
-                    height: 30,
+                    width: 22,
+                    height: 22,
                     decoration: BoxDecoration(
                       color: tone.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(7),
                     ),
-                    child: Icon(icon, size: 17, color: tone),
+                    child: Icon(icon, size: 13, color: tone),
                   ),
-                  const Spacer(),
-                  if (onTap != null)
-                    Icon(AppLocale.isArabic ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded,
-                        size: 12, color: Palette.muted),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Palette.text)),
+                  ),
                 ],
               ),
               const Spacer(),
@@ -224,10 +228,6 @@ class StatTile extends StatelessWidget {
                     style: TextStyle(fontSize: 24, height: 1.1, fontWeight: FontWeight.w900, color: Palette.text)),
               ),
               const SizedBox(height: 2),
-              Text(label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Palette.text)),
               Text(sub,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
