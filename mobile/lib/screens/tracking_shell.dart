@@ -89,6 +89,7 @@ class _TrackingShellState extends State<TrackingShell> {
                     store: widget.fleet,
                     api: widget.api,
                     token: session.token,
+                    role: session.role,
                     onOpenVehicle: (id) => showVehicleSheet(
                       context,
                       store: widget.fleet,

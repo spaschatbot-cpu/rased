@@ -90,9 +90,11 @@ class ApiClient {
     return _send('POST', '/track', body: body, token: token);
   }
 
-  /// رحلات هذا السائق: اليوم والأيام الستة التالية (السيرفر يرشّح بالحساب).
-  Future<List<Map<String, dynamic>>> trips(String token) async {
-    final data = await _send('GET', '/trips', token: token);
+  /// الرحلات. السائق يرى رحلاته (اليوم والأيام الستة التالية)، والإدارة كل
+  /// الرحلات — والمدى `from`/`to` (YYYY-MM-DD) اختياري.
+  Future<List<Map<String, dynamic>>> trips(String token, {String? from, String? to}) async {
+    final q = from != null && to != null ? '?from=$from&to=$to' : '';
+    final data = await _send('GET', '/trips$q', token: token);
     return ((data['trips'] as List?) ?? const []).cast<Map<String, dynamic>>();
   }
 
@@ -120,6 +122,22 @@ class ApiClient {
       'description': description,
       if (photo != null) 'photo': photo,
     });
+  }
+
+  /// صورة طلب إصلاح (data URL) أو `null`.
+  Future<String?> repairPhoto(String token, String id) async {
+    final data = await _send('GET', '/repairs?photo=${Uri.encodeComponent(id)}', token: token);
+    return data['photo'] as String?;
+  }
+
+  /// الإدارة تغيّر حالة طلب الإصلاح وتردّ عليه.
+  Future<void> updateRepair(String token, String id, {required String status, required String note}) =>
+      _send('PATCH', '/repairs?id=${Uri.encodeComponent(id)}', token: token, body: {'status': status, 'note': note});
+
+  /// حسابات المنصة — للمدير (منها السائقون ورخصهم).
+  Future<List<Map<String, dynamic>>> users(String token) async {
+    final data = await _send('GET', '/users', token: token);
+    return ((data['users'] as List?) ?? const []).cast<Map<String, dynamic>>();
   }
 
   /// إنهاء الوردية — تختفي المركبة من الخريطة الحية فورًا.

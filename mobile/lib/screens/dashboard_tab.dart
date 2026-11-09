@@ -7,6 +7,7 @@ import '../services/api_client.dart';
 import '../services/fleet_store.dart';
 import '../theme.dart';
 import '../widgets/fleet_widgets.dart';
+import 'ops_screens.dart';
 
 String _two(int n) => n.toString().padLeft(2, '0');
 String _iso(DateTime d) => '${d.year}-${_two(d.month)}-${_two(d.day)}';
@@ -39,12 +40,14 @@ class DashboardTab extends StatefulWidget {
     required this.store,
     required this.api,
     required this.token,
+    required this.role,
     required this.onOpenVehicle,
   });
 
   final FleetStore store;
   final ApiClient api;
   final String token;
+  final String role;
   final ValueChanged<int> onOpenVehicle;
 
   @override
@@ -60,6 +63,7 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _loading = false;
   String? _error;
   int _section = 0;
+  final _ops = GlobalKey<OpsCardsState>();
 
   @override
   void initState() {
@@ -72,6 +76,7 @@ class _DashboardTabState extends State<DashboardTab> {
       _loading = true;
       _error = null;
     });
+    _ops.currentState?.refresh();
     try {
       final data = await widget.api.dashboard(widget.token, _iso(_from), _iso(_to));
       if (mounted) setState(() => _data = data);
@@ -307,6 +312,15 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
               ],
             ),
+          ),
+          /* التشغيل: رحلات اليوم، طلبات الإصلاح، السائقون — كل بطاقة تفتح صفحتها */
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Text(tr('ops.title'), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: OpsCards(key: _ops, api: widget.api, token: widget.token, role: widget.role, store: widget.store),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
