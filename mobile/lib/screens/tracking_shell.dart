@@ -41,6 +41,10 @@ class _TrackingShellState extends State<TrackingShell> {
 
   int _tab = _lastTab;
 
+  /// التبويبات تُبنى عند أول زيارة فقط — بناؤها كلها عند الفتح كان يطلق كل
+  /// طلبات السيرفر معًا فيبطئ الصفحة الأولى.
+  final Set<int> _visited = {};
+
   /// مركبة طُلب عرضها على الخريطة من القائمة.
   final _focus = ValueNotifier<int?>(null);
 
@@ -67,6 +71,8 @@ class _TrackingShellState extends State<TrackingShell> {
   @override
   Widget build(BuildContext context) {
     final session = widget.tracker.session!;
+    _visited.add(_tab);
+    Widget lazy(int i, Widget child) => _visited.contains(i) ? child : const SizedBox.shrink();
 
     return Scaffold(
       backgroundColor: AppTheme.isDark ? Stage.bg : Palette.bg,
@@ -85,7 +91,9 @@ class _TrackingShellState extends State<TrackingShell> {
               child: IndexedStack(
                 index: _tab,
                 children: [
-                  DashboardTab(
+                  lazy(
+                    0,
+                    DashboardTab(
                     store: widget.fleet,
                     api: widget.api,
                     token: session.token,
@@ -99,28 +107,36 @@ class _TrackingShellState extends State<TrackingShell> {
                       onShowOnMap: () => _showOnMap(id),
                       onShowHistory: () => _showHistory(id),
                     ),
-                  ),
-                  LiveMapTab(
+                  )),
+                  lazy(
+                    1,
+                    LiveMapTab(
                     store: widget.fleet,
                     api: widget.api,
                     token: session.token,
                     focus: _focus,
                     onShowHistory: _showHistory,
-                  ),
-                  VehiclesTab(
+                  )),
+                  lazy(
+                    2,
+                    VehiclesTab(
                     store: widget.fleet,
                     api: widget.api,
                     token: session.token,
                     onShowOnMap: _showOnMap,
                     onShowHistory: _showHistory,
-                  ),
-                  HistoryTab(
+                  )),
+                  lazy(
+                    3,
+                    HistoryTab(
                     store: widget.fleet,
                     api: widget.api,
                     token: session.token,
                     request: _history,
-                  ),
-                  ReportsTab(
+                  )),
+                  lazy(
+                    4,
+                    ReportsTab(
                     store: widget.fleet,
                     api: widget.api,
                     token: session.token,
@@ -133,11 +149,13 @@ class _TrackingShellState extends State<TrackingShell> {
                       onShowOnMap: () => _showOnMap(id),
                       onShowHistory: () => _showHistory(id),
                     ),
-                  ),
-                  AccountTab(
+                  )),
+                  lazy(
+                    5,
+                    AccountTab(
                     session: session,
                     onSignOut: () => _confirmSignOut(context),
-                  ),
+                  )),
                 ],
               ),
             ),

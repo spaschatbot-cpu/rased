@@ -17,6 +17,8 @@ DateTime _today() {
   return DateTime(r.year, r.month, r.day);
 }
 
+String _pct(Object? v) => v == null ? '—' : '$v%';
+
 String _minutes(num m) {
   final total = m.round();
   if (total < 60) return '$total ${tr('hist.min')}';
@@ -49,8 +51,9 @@ class _ReportsTabState extends State<ReportsTab> {
     ('general', Icons.summarize_rounded),
     ('driving', Icons.route_rounded),
     ('speed', Icons.speed_rounded),
-    /* التبريد (sfda) مخفي حتى يُركَّب جهاز بحساس حرارة — بقيّة الصفحة ما
-       زالت تعرف كيف تعرضه، فإعادته سطر واحد */
+    ('sfda', Icons.ac_unit_rounded),
+    ('fuel', Icons.local_gas_station_rounded),
+    ('sensors', Icons.sensors_rounded),
   ];
 
   String _type = 'general';
@@ -195,6 +198,33 @@ class _ReportsTabState extends State<ReportsTab> {
                 '${r['distance']} ${tr('hist.km')}', '${r['maxSpeed']}', '${r['stops']}'],
           ],
         ),
+      'sfda' => (
+          [tr('vd.plate'), tr('pdf.date'), tr('pdf.time'), tr('rep.temp'), tr('rep.humidity'), tr('rep.compliance')],
+          [
+            for (final r in rows)
+              ['${r['plate']}', day(r), '${r['at']}', '${r['temperature']}°',
+                r['humidity'] == null ? '—' : '${r['humidity']}%',
+                r['compliant'] == true ? tr('rep.compliant') : tr('rep.breach')],
+          ],
+        ),
+      'fuel' => (
+          [tr('vd.plate'), tr('rep.fuelStart'), tr('rep.fuelEnd'), tr('rep.fuelMin'), tr('rep.refills'),
+            tr('rep.fuelDrops'), tr('rep.fuelUsed')],
+          [
+            for (final r in rows)
+              ['${r['plate']}', _pct(r['startFuel']), _pct(r['endFuel']), _pct(r['minFuel']),
+                '${r['refills']} (+${r['refilled']}%)', '${r['drops']} (−${r['dropped']}%)',
+                r['fuelUsed'] == null ? '—' : '${r['fuelUsed']} L'],
+          ],
+        ),
+      'sensors' => (
+          [tr('vd.plate'), tr('pdf.date'), tr('pdf.time'), tr('rep.sensor'), tr('rep.reading')],
+          [
+            for (final r in rows)
+              ['${r['plate']}', day(r), '${r['at']}', '${AppLocale.isArabic ? r['sensorAr'] : r['sensorEn']}',
+                '${AppLocale.isArabic ? r['valueAr'] : r['valueEn']}'],
+          ],
+        ),
       _ => (
           [tr('vd.plate'), tr('pdf.date'), tr('pdf.time'), tr('rep.peak'), tr('rep.limit'),
             tr('rep.over'), tr('rep.duration'), tr('fleet.address')],
@@ -289,12 +319,13 @@ class _ReportsTabState extends State<ReportsTab> {
             ),
           ),
 
-          /* نوع التقرير: أربعة أزرار متساوية */
+          /* نوع التقرير: ستة أزرار في صفّين — نفس أنواع الموقع */
+          for (var start = 0; start < _types.length; start += 3)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: EdgeInsets.fromLTRB(16, start == 0 ? 12 : 8, 16, 0),
             child: Row(
               children: [
-                for (final (i, t) in _types.indexed) ...[
+                for (final (i, t) in _types.sublist(start, start + 3).indexed) ...[
                   if (i > 0) const SizedBox(width: 8),
                   Expanded(
                     child: _TypeTile(
@@ -366,7 +397,7 @@ class _ReportsTabState extends State<ReportsTab> {
             const SizedBox(height: 12),
             if (rows.isEmpty)
               _Empty(
-                text: _data?['unsupported'] != null ? tr('rep.noSensor') : tr('rep.empty'),
+                text: _data?['unsupported'] != null ? tr('rep.no.$_type') : tr('rep.empty'),
               )
             else
               for (final r in rows)
@@ -405,6 +436,22 @@ class _ReportsTabState extends State<ReportsTab> {
           (Icons.local_shipping_rounded, const Color(0xFF38BDF8), tr('rep.vehiclesInvolved'),
               '${rows.map((r) => r['vehicleId']).toSet().length}'),
           (Icons.timer_rounded, const Color(0xFFA78BFA), tr('rep.totalTime'), '${(sum('durationSec') / 60).round()} ${tr('hist.min')}'),
+        ],
+      'fuel' => [
+          (Icons.local_gas_station_rounded, Brand.green, tr('rep.fuelUsed'),
+              '${sum('fuelUsed').toStringAsFixed(1)} L'),
+          (Icons.add_circle_outline_rounded, const Color(0xFF38BDF8), tr('rep.refills'), '${sum('refills')}'),
+          (Icons.warning_amber_rounded, Brand.danger, tr('rep.fuelDrops'), '${sum('drops')}'),
+          (Icons.local_shipping_rounded, Brand.warn, tr('rep.vehiclesInvolved'), '${rows.length}'),
+        ],
+      'sensors' => [
+          (Icons.sensors_rounded, const Color(0xFF38BDF8), tr('rep.events'), '${rows.length}'),
+          (Icons.warning_amber_rounded, Brand.danger, tr('rep.harsh'),
+              '${rows.where((r) => r['sensor'] == 'harsh').length}'),
+          (Icons.notifications_active_rounded, Brand.warn, tr('rep.alarms'),
+              '${rows.where((r) => r['alarm'] == true).length}'),
+          (Icons.local_shipping_rounded, Brand.green, tr('rep.vehiclesInvolved'),
+              '${rows.map((r) => r['vehicleId']).toSet().length}'),
         ],
       _ => [
           (Icons.thermostat_rounded, const Color(0xFF38BDF8), tr('rep.readings'), '${rows.length}'),
@@ -512,13 +559,33 @@ class _ReportsTabState extends State<ReportsTab> {
           ],
           Brand.danger,
         ),
+      'fuel' => (
+          '',
+          [
+            (tr('rep.fuelStart'), _pct(r['startFuel'])),
+            (tr('rep.fuelEnd'), _pct(r['endFuel'])),
+            (tr('rep.refills'), '${r['refills']}'),
+            (tr('rep.fuelDrops'), '${r['drops']}'),
+            (tr('rep.fuelUsed'), r['fuelUsed'] == null ? '—' : '${r['fuelUsed']} L'),
+          ],
+          ((r['drops'] as num?) ?? 0) > 0 ? Brand.danger : Brand.green,
+        ),
+      'sensors' => (
+          '$dayText${r['at']}',
+          [
+            (tr('rep.sensor'), '${AppLocale.isArabic ? r['sensorAr'] : r['sensorEn']}'),
+            (tr('rep.reading'), '${AppLocale.isArabic ? r['valueAr'] : r['valueEn']}'),
+          ],
+          r['alarm'] == true || r['sensor'] == 'harsh' ? Brand.danger : const Color(0xFF38BDF8),
+        ),
       _ => (
-          '${r['at']}',
+          '$dayText${r['at']}',
           [
             (tr('rep.temp'), '${r['temperature']}°'),
             (tr('rep.humidity'), r['humidity'] == null ? '—' : '${r['humidity']}%'),
+            (tr('rep.compliance'), r['compliant'] == true ? tr('rep.compliant') : tr('rep.breach')),
           ],
-          const Color(0xFF38BDF8),
+          r['compliant'] == true ? Brand.green : Brand.danger,
         ),
     };
 
