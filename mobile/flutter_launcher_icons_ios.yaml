@@ -1,0 +1,15 @@
+# iOS icon, kept apart from the Android/web config in pubspec.yaml.
+#
+# The Android workflow runs flutter_launcher_icons on a Linux runner where ios/
+# does not exist; with `ios: true` in the shared config it would go looking for
+# ios/Runner/Assets.xcassets and fail that build. So the iOS workflow passes this
+# file with `-f` and the Android one never sees it.
+#
+# icon-ios.png is full-bleed and opaque on purpose: iOS draws its own rounded
+# mask, and App Store Connect rejects an icon that has an alpha channel at all,
+# even a fully opaque one -- remove_alpha_ios is there in case it ever regains one.
+flutter_launcher_icons:
+  android: false
+  ios: true
+  image_path_ios: assets/icon/icon-ios.png
+  remove_alpha_ios: true

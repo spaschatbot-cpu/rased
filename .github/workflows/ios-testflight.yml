@@ -1,0 +1,169 @@
+# Builds the app for iOS and, when asked, ships it to TestFlight.
+#
+# There is no Mac in this team, and an iOS build cannot happen anywhere else --
+# Xcode only runs on macOS. A hosted macOS runner is that Mac. The repository is
+# public, so its minutes cost nothing.
+#
+# ios/ is not committed, for the same reason android/ is not: it is generated
+# here on every run, and the two tool/ scripts put back what generation leaves
+# out (permission strings, display name, icon).
+#
+# Two modes:
+#   push on mobile/**   -> compile only, unsigned. Proves the app still builds
+#                          for iOS; nothing leaves the runner.
+#   Run workflow        -> compile, sign, upload to TestFlight -- once the four
+#                          App Store secrets below exist. Without them it stops
+#                          after the compile and says what is missing.
+#
+# Secrets (Settings -> Secrets and variables -> Actions):
+#   APPLE_TEAM_ID    10-character Team ID from developer.apple.com -> Membership
+#   ASC_KEY_ID       App Store Connect API key ID
+#   ASC_ISSUER_ID    the Issuer ID shown above the list of keys
+#   ASC_KEY_P8       the downloaded AuthKey_XXXX.p8, base64-encoded
+#
+# The key needs the Admin role. Signing here is automatic: Xcode creates the
+# distribution certificate and profile itself, and only an Admin key may.
+name: ios testflight
+
+on:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/ios-testflight.yml'
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: 'API the app talks to'
+        default: 'https://autotracksa.click/api'
+      upload:
+        description: 'Upload to TestFlight (needs the App Store secrets)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Two uploads racing for the same build number would have one rejected.
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ios:
+    runs-on: macos-15
+    env:
+      API_BASE: ${{ inputs.api_base || 'https://autotracksa.click/api' }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # App Store Connect only accepts builds made with a current SDK, and the
+      # runner image carries several Xcodes -- take the newest stable one.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Generate the iOS project
+        working-directory: mobile
+        run: |
+          xcodebuild -version
+          flutter create --org click --project-name autotracksa --platforms=ios .
+          node tool/apply-ios-additions.mjs
+
+      - name: Generate the app icon
+        working-directory: mobile
+        run: dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
+
+      # The build number is the run number: TestFlight refuses a build number it
+      # has already seen for this version, and this one only ever goes up.
+      - name: Build (unsigned)
+        working-directory: mobile
+        run: |
+          flutter build ios --release --no-codesign \
+            --build-number=${{ github.run_number }} \
+            --dart-define=API_BASE="$API_BASE"
+
+      - name: Check the App Store secrets
+        id: secrets
+        if: github.event_name == 'workflow_dispatch' && inputs.upload
+        run: |
+          missing=""
+          for name in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### iOS build compiled -- not uploaded"
+              echo "Missing secrets:$missing"
+              echo
+              echo "Create the app in App Store Connect with bundle ID \`click.autotracksa\`,"
+              echo "add the secrets, then run this workflow again."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Not uploading -- missing secrets:$missing"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sign and archive
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: mobile
+        run: |
+          echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          xcodebuild archive \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic
+
+      # destination=upload sends the export straight to App Store Connect, so
+      # there is no separate upload tool to install or keep working.
+      - name: Upload to TestFlight
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          {
+            echo "### Uploaded to TestFlight"
+            echo "Build ${{ github.run_number }} -- it appears in App Store Connect after Apple finishes processing (usually 5-30 minutes)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

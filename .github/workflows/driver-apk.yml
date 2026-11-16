@@ -59,10 +59,13 @@ jobs:
         working-directory: mobile
         run: flutter analyze
 
+      # The run number as versionCode: Android installs a newer APK over an older
+      # one only when this goes up, and Google Play refuses a repeated one.
       - name: Build
         working-directory: mobile
         run: |
           flutter build apk --release \
+            --build-number=${{ github.run_number }} \
             --dart-define=API_BASE="${{ inputs.api_base || 'https://autotracksa.click/api' }}"
 
       - uses: actions/upload-artifact@v4
