@@ -20,8 +20,10 @@
 # Secrets (Settings -> Secrets and variables -> Actions):
 #   ANDROID_KEYSTORE_B64       the upload keystore (.jks), base64-encoded
 #   ANDROID_KEYSTORE_PASSWORD  its store password
-#   ANDROID_KEY_ALIAS          the key's alias inside it
-#   ANDROID_KEY_PASSWORD       the key's password
+#   ANDROID_KEY_ALIAS          optional -- the key's alias, `upload` if unset
+#   ANDROID_KEY_PASSWORD       optional -- the store password if unset, which
+#                              is always right for a PKCS12 store such as the
+#                              one tool/make-upload-key.sh makes
 #   PLAY_SERVICE_ACCOUNT_JSON  service account JSON with release rights on the
 #                              app in Play Console (only for the upload)
 name: driver apk
@@ -95,24 +97,22 @@ jobs:
         run: flutter analyze
 
       # Written after generation, which would not touch it anyway: android/ is
-      # gitignored and key.properties never reaches the repository. Some but
-      # not all of the four secrets is a mistake, not a choice -- stop on it.
+      # gitignored and key.properties never reaches the repository. The store
+      # without its password, or the reverse, is a mistake -- stop on it.
       - name: Set up the upload key
         id: signing
         run: |
-          set=0; missing=""
-          for name in ANDROID_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
-            if [ -n "${!name}" ]; then set=$((set+1)); else missing="$missing $name"; fi
-          done
-          if [ "$set" -eq 0 ]; then
+          if [ -z "$ANDROID_KEYSTORE_B64" ] && [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "signed=false" >> "$GITHUB_OUTPUT"
             echo "::warning::No upload key -- signed with the debug key, no AAB for Google Play"
             exit 0
           fi
-          if [ -n "$missing" ]; then
-            echo "::error::Upload key only partly set -- missing:$missing"
+          if [ -z "$ANDROID_KEYSTORE_B64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Upload key only partly set -- ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PASSWORD go together"
             exit 1
           fi
+          ANDROID_KEY_ALIAS="${ANDROID_KEY_ALIAS:-upload}"
+          ANDROID_KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
           echo "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
           {
             echo "storeFile=$RUNNER_TEMP/upload.jks"
@@ -197,7 +197,7 @@ jobs:
             if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
               echo "Signed with the upload key -- APK and AAB are in the artifacts."
             else
-              echo "Signed with the debug key -- add the ANDROID_* secrets for a Play-ready AAB."
+              echo "Signed with the debug key -- add ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PASSWORD for a Play-ready AAB."
             fi
             if [ "${{ steps.play.outputs.ready }}" = "true" ]; then
               echo "Sent to Google Play: track \`${{ inputs.play_track }}\`, status \`${{ inputs.play_status }}\`."
