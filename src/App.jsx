@@ -19,6 +19,7 @@ import Reports from './pages/app/Reports'
 import Alerts from './pages/app/Alerts'
 import Management from './pages/app/Management'
 import NotFound from './pages/NotFound'
+import Privacy from './pages/Privacy'
 
 /** Held while the session cookie is being checked — redirecting first would
     bounce a signed-in user to /login on every refresh. */
@@ -65,6 +66,7 @@ export default function App() {
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route index element={<Landing />} />
+                <Route path="privacy" element={<Privacy />} />
               </Route>
 
               <Route path="/login" element={<Login />} />

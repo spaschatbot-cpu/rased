@@ -369,7 +369,7 @@ function SiteFooter() {
                 </span>
                 {t('footer.operational')}
               </span>
-              <a href="#" className="font-bold transition-colors hover:text-brand-500">{t('footer.privacy')}</a>
+              <a href="/privacy" className="font-bold transition-colors hover:text-brand-500">{t('footer.privacy')}</a>
               <a href="#" className="font-bold transition-colors hover:text-brand-500">{t('footer.terms')}</a>
             </div>
 
