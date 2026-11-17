@@ -152,13 +152,13 @@ jobs:
             --build-number=${{ github.run_number }} \
             --dart-define=API_BASE="$API_BASE"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: autotrack-driver-apk
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: steps.signing.outputs.signed == 'true'
         with:
           name: autotrack-driver-aab
