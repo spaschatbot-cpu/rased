@@ -6,6 +6,24 @@
 # loopback connection", which names a symptom and nothing you can act on. A
 # runner does not have that problem, and the APK stops depending on whose laptop
 # it was built from.
+#
+# Signing. Once the four ANDROID_* secrets below exist, every build is signed
+# with the upload key: the APK installs over the previous one, and the AAB is
+# what Google Play takes. Without them it falls back to the debug key (a new
+# one per runner, so APKs do not update over each other) and makes no AAB.
+#
+# Google Play. A manual run with "Send to Google Play" set to a track uploads
+# the AAB there through a service account. Play only accepts API uploads once
+# the app exists and its first AAB went up by hand in Play Console -- take that
+# one from this workflow's artifacts.
+#
+# Secrets (Settings -> Secrets and variables -> Actions):
+#   ANDROID_KEYSTORE_B64       the upload keystore (.jks), base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD  its store password
+#   ANDROID_KEY_ALIAS          the key's alias inside it
+#   ANDROID_KEY_PASSWORD       the key's password
+#   PLAY_SERVICE_ACCOUNT_JSON  service account JSON with release rights on the
+#                              app in Play Console (only for the upload)
 name: driver apk
 
 on:
@@ -18,6 +36,16 @@ on:
       api_base:
         description: 'API the app talks to'
         default: 'https://autotracksa.click/api'
+      play_track:
+        description: 'Send to Google Play (needs PLAY_SERVICE_ACCOUNT_JSON)'
+        type: choice
+        options: [none, internal, alpha, beta, production]
+        default: none
+      play_status:
+        description: 'Release status on that track -- draft until the app has passed its first review'
+        type: choice
+        options: [draft, completed]
+        default: draft
 
 permissions:
   contents: read
@@ -25,6 +53,13 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      API_BASE: ${{ inputs.api_base || 'https://autotracksa.click/api' }}
+      ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,17 +94,116 @@ jobs:
         working-directory: mobile
         run: flutter analyze
 
+      # Written after generation, which would not touch it anyway: android/ is
+      # gitignored and key.properties never reaches the repository. Some but
+      # not all of the four secrets is a mistake, not a choice -- stop on it.
+      - name: Set up the upload key
+        id: signing
+        run: |
+          set=0; missing=""
+          for name in ANDROID_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -n "${!name}" ]; then set=$((set+1)); else missing="$missing $name"; fi
+          done
+          if [ "$set" -eq 0 ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No upload key -- signed with the debug key, no AAB for Google Play"
+            exit 0
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::Upload key only partly set -- missing:$missing"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/upload.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > mobile/android/key.properties
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
       # The run number as versionCode: Android installs a newer APK over an older
       # one only when this goes up, and Google Play refuses a repeated one.
-      - name: Build
+      - name: Build the APK
         working-directory: mobile
         run: |
           flutter build apk --release \
             --build-number=${{ github.run_number }} \
-            --dart-define=API_BASE="${{ inputs.api_base || 'https://autotracksa.click/api' }}"
+            --dart-define=API_BASE="$API_BASE"
+
+      # The signature is checked rather than trusted: a Gradle file that quietly
+      # fell back to the debug key would otherwise surface as a Play rejection.
+      - name: Check the APK signature
+        if: steps.signing.outputs.signed == 'true'
+        working-directory: mobile
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | tee "$RUNNER_TEMP/certs.txt"
+          if grep -q "CN=Android Debug" "$RUNNER_TEMP/certs.txt"; then
+            echo "::error::The APK is signed with the debug key, not the upload key"
+            exit 1
+          fi
+
+      - name: Build the AAB
+        if: steps.signing.outputs.signed == 'true'
+        working-directory: mobile
+        run: |
+          flutter build appbundle --release \
+            --build-number=${{ github.run_number }} \
+            --dart-define=API_BASE="$API_BASE"
 
       - uses: actions/upload-artifact@v4
         with:
           name: autotrack-driver-apk
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.signed == 'true'
+        with:
+          name: autotrack-driver-aab
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Check the Play secret
+        id: play
+        if: github.event_name == 'workflow_dispatch' && inputs.play_track != 'none'
+        run: |
+          if [ "${{ steps.signing.outputs.signed }}" != "true" ]; then
+            echo "::error::No upload key, so no AAB to send to Google Play"
+            exit 1
+          fi
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not set -- upload the AAB from the artifacts by hand"
+            exit 1
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to Google Play
+        if: steps.play.outputs.ready == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: click.autotracksa
+          releaseFiles: mobile/build/app/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.play_track }}
+          status: ${{ inputs.play_status }}
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Build ${{ github.run_number }}"
+            if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
+              echo "Signed with the upload key -- APK and AAB are in the artifacts."
+            else
+              echo "Signed with the debug key -- add the ANDROID_* secrets for a Play-ready AAB."
+            fi
+            if [ "${{ steps.play.outputs.ready }}" = "true" ]; then
+              echo "Sent to Google Play: track \`${{ inputs.play_track }}\`, status \`${{ inputs.play_status }}\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the upload key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" mobile/android/key.properties

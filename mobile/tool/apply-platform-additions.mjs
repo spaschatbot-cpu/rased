@@ -114,3 +114,54 @@ if (!meta.includes('platform: web')) {
   writeFileSync(METADATA, lines.join('\n'))
   console.log('restored `platform: web` in .metadata -- generation had dropped it')
 }
+
+/* Release signing. `flutter create` signs release builds with the debug key,
+   and a CI runner makes a fresh debug key every run -- so no two APKs share a
+   signature, a phone refuses to install one over another, and Google Play
+   rejects them outright. This points release builds at the upload key that CI
+   writes to android/key.properties from the repository secrets.
+
+   Without that file (a laptop, or CI before the secrets exist) the build keeps
+   the debug key, so `flutter run --release` still works anywhere. */
+const GRADLE = 'android/app/build.gradle.kts'
+const DEBUG_SIGNING = 'signingConfig = signingConfigs.getByName("debug")'
+const gradle = readFileSync(GRADLE, 'utf8')
+
+if (gradle.includes('keystorePropertiesFile')) {
+  console.log('release signing already wired')
+} else if (!gradle.includes(DEBUG_SIGNING) || !gradle.includes('    buildTypes {') || !gradle.includes('\nandroid {')) {
+  console.error(`${GRADLE}: unexpected shape — no debug signingConfig / buildTypes block to replace`)
+  process.exit(1)
+} else {
+  /* fully-qualified names: a .kts file only allows imports above plugins {} */
+  const preamble = [
+    'val keystorePropertiesFile = rootProject.file("key.properties")',
+    'val keystoreProperties = java.util.Properties().apply {',
+    '    if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use { load(it) }',
+    '}',
+    '',
+  ].join('\n')
+  const signingConfigs = [
+    '    signingConfigs {',
+    '        if (keystorePropertiesFile.exists()) {',
+    '            create("release") {',
+    '                storeFile = file(keystoreProperties.getProperty("storeFile"))',
+    '                storePassword = keystoreProperties.getProperty("storePassword")',
+    '                keyAlias = keystoreProperties.getProperty("keyAlias")',
+    '                keyPassword = keystoreProperties.getProperty("keyPassword")',
+    '            }',
+    '        }',
+    '    }',
+    '',
+    '    buildTypes {',
+  ].join('\n')
+  const wired = gradle
+    .replace('\nandroid {', `\n${preamble}\nandroid {`)
+    .replace('    buildTypes {', signingConfigs)
+    .replace(
+      DEBUG_SIGNING,
+      'signingConfig = signingConfigs.getByName(if (keystorePropertiesFile.exists()) "release" else "debug")',
+    )
+  writeFileSync(GRADLE, wired)
+  console.log('wired release signing to android/key.properties (debug key when it is absent)')
+}
