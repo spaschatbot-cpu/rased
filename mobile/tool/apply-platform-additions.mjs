@@ -133,10 +133,13 @@ if (gradle.includes('keystorePropertiesFile')) {
   console.error(`${GRADLE}: unexpected shape — no debug signingConfig / buildTypes block to replace`)
   process.exit(1)
 } else {
-  /* fully-qualified names: a .kts file only allows imports above plugins {} */
+  /* Imported, not written as java.util.Properties: inside a Gradle .kts file
+     a bare `java` can resolve to the project's `java` extension instead of the
+     package, and the script stops compiling. Imports must open the file. */
+  const IMPORT = 'import java.util.Properties\n\n'
   const preamble = [
     'val keystorePropertiesFile = rootProject.file("key.properties")',
-    'val keystoreProperties = java.util.Properties().apply {',
+    'val keystoreProperties = Properties().apply {',
     '    if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use { load(it) }',
     '}',
     '',
@@ -155,7 +158,7 @@ if (gradle.includes('keystorePropertiesFile')) {
     '',
     '    buildTypes {',
   ].join('\n')
-  const wired = gradle
+  const wired = (IMPORT + gradle)
     .replace('\nandroid {', `\n${preamble}\nandroid {`)
     .replace('    buildTypes {', signingConfigs)
     .replace(
