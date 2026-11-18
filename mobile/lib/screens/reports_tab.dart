@@ -72,7 +72,13 @@ class _ReportsTabState extends State<ReportsTab> {
     _load();
   }
 
+  /* Bumped on every load, so a reply that arrives after the user has already
+     moved on (switched report type quickly) is dropped instead of being drawn
+     with the newer type's layout, which showed "null" in every cell. */
+  int _request = 0;
+
   Future<void> _load() async {
+    final request = ++_request;
     setState(() {
       _loading = true;
       _error = null;
@@ -80,11 +86,13 @@ class _ReportsTabState extends State<ReportsTab> {
     try {
       final data = await widget.api.report(widget.token, _type, _iso(_from), _iso(_to),
           vehicles: _vehicles.toList());
-      if (mounted) setState(() => _data = data);
+      if (mounted && request == _request) setState(() => _data = data);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.isNetworkFailure ? tr('fleet.offline') : e.message);
+      if (mounted && request == _request) {
+        setState(() => _error = e.isNetworkFailure ? tr('fleet.offline') : e.message);
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && request == _request) setState(() => _loading = false);
     }
   }
 
