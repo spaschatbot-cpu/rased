@@ -22,8 +22,12 @@ const PERMISSIONS = [
   'android.permission.INTERNET',
   'android.permission.ACCESS_FINE_LOCATION',
   'android.permission.ACCESS_COARSE_LOCATION',
-  /* tracking with the screen locked */
-  'android.permission.ACCESS_BACKGROUND_LOCATION',
+  /* Tracking with the screen locked is the foreground service below, started
+     while the app is on screen -- that only needs "while in use" location,
+     which is all tracker.dart ever asks for. ACCESS_BACKGROUND_LOCATION is
+     deliberately absent: the app never requests it, and merely declaring it
+     sends a Play submission into the background-location review, with a form,
+     a video and a policy check, for a permission nothing uses. */
   'android.permission.FOREGROUND_SERVICE',
   'android.permission.FOREGROUND_SERVICE_LOCATION',
   /* keeps the CPU awake through a shift */
