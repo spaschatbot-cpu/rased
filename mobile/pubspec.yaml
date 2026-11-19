@@ -18,6 +18,8 @@ dependencies:
   # الموقع — يوفّر Foreground Service على أندرويد بإشعار ثابت،
   # وهو ما يسمح بالتتبّع والشاشة مقفولة دون حزمة مدفوعة.
   geolocator: ^13.0.1
+  # إذن الإشعارات على أندرويد 13+ — بدونه لا يظهر إشعار الوردية الثابت
+  permission_handler: ^11.3.1
 
   # التوكن سرّي: Keystore على أندرويد و Keychain على iOS
   flutter_secure_storage: ^9.2.2

@@ -19,6 +19,9 @@
 <!-- يمنع النظام من إنامة المعالج أثناء الوردية -->
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+<!-- أندرويد 13+: بدونه يختفي إشعار الوردية الثابت -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
 
 <!-- ═══ داخل <application> ═══ -->
 

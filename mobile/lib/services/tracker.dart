@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../config.dart';
 import '../i18n.dart';
@@ -94,6 +95,17 @@ class Tracker extends ChangeNotifier {
       state = ShiftState.off;
       _publish();
       return;
+    }
+
+    /* Android 13+ hides a foreground service's notification until the app
+       may post notifications, so the shift would track with nothing in the
+       notification bar to say so. Tracking works either way; this only makes
+       the ongoing "shift running" notice visible. Asked once, after location,
+       and a refusal is not an error. */
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await Permission.notification.request();
+      } catch (_) {}
     }
 
     _stream = Geolocator.getPositionStream(locationSettings: _settings()).listen(

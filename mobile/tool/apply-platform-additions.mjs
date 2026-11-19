@@ -32,6 +32,9 @@ const PERMISSIONS = [
   'android.permission.FOREGROUND_SERVICE_LOCATION',
   /* keeps the CPU awake through a shift */
   'android.permission.WAKE_LOCK',
+  /* Android 13+: without it the foreground service's ongoing notification is
+     hidden, so a driver mid-shift sees nothing saying they are being tracked */
+  'android.permission.POST_NOTIFICATIONS',
 ]
 
 const xml = readFileSync(MANIFEST, 'utf8')
